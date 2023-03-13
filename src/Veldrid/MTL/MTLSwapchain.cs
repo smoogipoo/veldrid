@@ -124,7 +124,7 @@ namespace Veldrid.MTL
                 ObjectiveCRuntime.release(_drawable.NativePtr);
             }
 
-            using (NSAutoreleasePool.Begin())
+            // using (NSAutoreleasePool.Begin())
             {
                 _drawable = _metalLayer.nextDrawable();
                 ObjectiveCRuntime.retain(_drawable.NativePtr);
