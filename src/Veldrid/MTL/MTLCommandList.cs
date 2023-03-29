@@ -323,16 +323,27 @@ namespace Veldrid.MTL
                 viewport.MaxDepth);
         }
 
+        private readonly List<MTLBuffer> bufferCache = new List<MTLBuffer>();
+        private int currentBuffer;
+        private const int buffer_size = 1024 * 100; // 100KB
+        private const int max_buffers = 10000; // 10000 * 100KB = 1GB
+
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
             bool useComputeCopy = (bufferOffsetInBytes % 4 != 0)
                 || (sizeInBytes % 4 != 0 && bufferOffsetInBytes != 0 && sizeInBytes != buffer.SizeInBytes);
 
-            MTLBuffer dstMTLBuffer = Util.AssertSubtype<DeviceBuffer, MTLBuffer>(buffer);
-            // TODO: Cache these, and rely on the command buffer's completion callback to add them back to a shared pool.
-            MTLBuffer copySrc = Util.AssertSubtype<DeviceBuffer, MTLBuffer>(
-                _gd.ResourceFactory.CreateBuffer(new BufferDescription(sizeInBytes, BufferUsage.Staging)));
+            while (currentBuffer >= bufferCache.Count)
+            {
+                bufferCache.Add(
+                    Util.AssertSubtype<DeviceBuffer, MTLBuffer>(
+                        _gd.ResourceFactory.CreateBuffer(new BufferDescription(buffer_size, BufferUsage.Staging))));
+            }
+
+            MTLBuffer copySrc = bufferCache[currentBuffer];
             _gd.UpdateBuffer(copySrc, 0, source, sizeInBytes);
+
+            MTLBuffer dstMTLBuffer = Util.AssertSubtype<DeviceBuffer, MTLBuffer>(buffer);
 
             if (useComputeCopy)
             {
@@ -349,7 +360,8 @@ namespace Veldrid.MTL
                     (UIntPtr)(sizeInBytes + sizeRoundFactor));
             }
 
-            copySrc.Dispose();
+            if (++currentBuffer == max_buffers)
+                currentBuffer = 0;
         }
 
         protected override void CopyBufferCore(
