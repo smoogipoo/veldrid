@@ -17,7 +17,6 @@ namespace Veldrid.D3D11
         private readonly PixelFormat? _depthFormat;
         private IDXGISwapChain _dxgiSwapChain;
         private bool _vsync;
-        private int _syncInterval;
         private D3D11Framebuffer _framebuffer;
         private D3D11Texture _depthTexture;
         private float _pixelScale = 1f;
@@ -63,10 +62,16 @@ namespace Veldrid.D3D11
             get => _vsync;
             set
             {
+                if (_vsync == value)
+                    return;
+
                 _vsync = value;
-                _syncInterval = D3D11Util.GetSyncInterval(value);
+
+                recreateSwapchain();
             }
         }
+
+        public int SyncInterval => D3D11Util.GetSyncInterval(SyncToVerticalBlank);
 
         public PresentFlags PresentFlags
         {
@@ -98,6 +103,21 @@ namespace Veldrid.D3D11
             }
         }
 
+        private int bufferCount
+        {
+            get
+            {
+                if (SyncToVerticalBlank)
+                    return 2;
+
+                if (AllowTearing && _canTear)
+                    return 2;
+
+                // With waitable swapchains, triple buffering seems to give the lowest input lag.
+                return _canCreateFrameLatencyWaitableObject ? 3 : 2;
+            }
+        }
+
         private uint _width;
         private uint _height;
 
@@ -107,14 +127,12 @@ namespace Veldrid.D3D11
 
         public IDXGISwapChain DxgiSwapChain => _dxgiSwapChain;
 
-        public int SyncInterval => _syncInterval;
-
         public D3D11Swapchain(D3D11GraphicsDevice gd, ref SwapchainDescription description)
         {
             _gd = gd;
             _description = description;
             _depthFormat = description.DepthFormat;
-            SyncToVerticalBlank = description.SyncToVerticalBlank;
+            _vsync = description.SyncToVerticalBlank;
 
             _colorFormat = description.ColorSrgb
                 ? Format.B8G8R8A8_UNorm_SRgb
@@ -151,14 +169,14 @@ namespace Veldrid.D3D11
 
             if (AllowTearing && _canTear)
                 _flags |= SwapChainFlags.AllowTearing;
-            else if (_canCreateFrameLatencyWaitableObject)
+            if (_canCreateFrameLatencyWaitableObject)
                 _flags |= SwapChainFlags.FrameLatencyWaitableObject;
 
             if (_description.Source is Win32SwapchainSource win32Source)
             {
                 SwapChainDescription dxgiSCDesc = new SwapChainDescription
                 {
-                    BufferCount = 2,
+                    BufferCount = bufferCount,
                     Windowed = true,
                     BufferDescription = new ModeDescription(
                         (int)_width, (int)_height, _colorFormat),
@@ -183,7 +201,7 @@ namespace Veldrid.D3D11
                 SwapChainDescription1 swapChainDescription = new SwapChainDescription1()
                 {
                     AlphaMode = AlphaMode.Ignore,
-                    BufferCount = 2,
+                    BufferCount = bufferCount,
                     Format = _colorFormat,
                     Height = (int)(_height * _pixelScale),
                     Width = (int)(_width * _pixelScale),
@@ -270,7 +288,7 @@ namespace Veldrid.D3D11
             uint actualHeight = (uint)(height * _pixelScale);
             if (resizeBuffers)
             {
-                _dxgiSwapChain.ResizeBuffers(2, (int)actualWidth, (int)actualHeight, _colorFormat, _flags).CheckError();
+                _dxgiSwapChain.ResizeBuffers(bufferCount, (int)actualWidth, (int)actualHeight, _colorFormat, _flags).CheckError();
             }
 
             // Get the backbuffer from the swapchain
