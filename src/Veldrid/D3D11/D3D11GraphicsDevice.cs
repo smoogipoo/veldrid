@@ -11,6 +11,7 @@ using Vortice.Direct3D11.Debug;
 using VorticeDXGI = Vortice.DXGI.DXGI;
 using VorticeD3D11 = Vortice.Direct3D11.D3D11;
 using Vortice.DXGI.Debug;
+using MapFlags = Vortice.Direct3D11.MapFlags;
 
 namespace Veldrid.D3D11
 {
@@ -36,6 +37,8 @@ namespace Veldrid.D3D11
 
         private readonly object _stagingResourcesLock = new object();
         private readonly List<D3D11Buffer> _availableStagingBuffers = new List<D3D11Buffer>();
+        private readonly List<D3D11Buffer> _stagingBuffersInUse = new List<D3D11Buffer>();
+        private readonly List<D3D11Buffer> _returnableStagingBuffers = new List<D3D11Buffer>();
 
         public override string DeviceName => _deviceName;
 
@@ -216,12 +219,22 @@ namespace Veldrid.D3D11
 
         private protected override void SubmitCommandsCore(CommandList cl, Fence fence)
         {
+            lock (_stagingResourcesLock)
+            {
+                _availableStagingBuffers.AddRange(_returnableStagingBuffers);
+                _returnableStagingBuffers.Clear();
+            }
+
             D3D11CommandList d3d11CL = Util.AssertSubtype<CommandList, D3D11CommandList>(cl);
+
             lock (_immediateContextLock)
             {
                 if (d3d11CL.DeviceCommandList != null) // CommandList may have been reset in the meantime (resized swapchain).
                 {
                     _immediateContext.ExecuteCommandList(d3d11CL.DeviceCommandList, false);
+
+                    RegisterStagingBufferCompletion();
+
                     d3d11CL.OnCompleted();
                 }
             }
@@ -230,6 +243,42 @@ namespace Veldrid.D3D11
             {
                 d3d11Fence.Set();
             }
+        }
+
+        private void RegisterStagingBufferCompletion()
+        {
+            List<D3D11Buffer> buffers;
+
+            lock (_stagingResourcesLock)
+            {
+                if (_stagingBuffersInUse.Count == 0)
+                {
+                    return;
+                }
+
+                buffers = new List<D3D11Buffer>(_stagingBuffersInUse);
+                _stagingBuffersInUse.Clear();
+            }
+
+            using ID3D11Device5 device5 = _device.QueryInterface<ID3D11Device5>();
+            using ID3D11DeviceContext4 context4 = _immediateContext.QueryInterface<ID3D11DeviceContext4>();
+
+            ID3D11Fence fence = device5.CreateFence(0);
+            WaitHandle waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
+            fence.SetEventOnCompletion(1, waitHandle);
+
+            ThreadPool.RegisterWaitForSingleObject(waitHandle, (_, __) =>
+            {
+                lock (_stagingResourcesLock)
+                {
+                    _returnableStagingBuffers.AddRange(buffers);
+                }
+
+                waitHandle.Dispose();
+                fence.Dispose();
+            }, null, TimeSpan.FromSeconds(60), true); // Should never time out.
+
+            context4.Signal(fence, 1);
         }
 
         public override bool AllowTearing
@@ -352,7 +401,7 @@ namespace Veldrid.D3D11
                                 buffer.Buffer,
                                 0,
                                 D3D11Formats.VdToD3D11MapMode((buffer.Usage & BufferUsage.Dynamic) == BufferUsage.Dynamic, mode),
-                                Vortice.Direct3D11.MapFlags.None);
+                                buffer.Usage == BufferUsage.Staging ? MapFlags.DoNotWait : MapFlags.None);
 
                             info.MappedResource = new MappedResource(resource, mode, msr.DataPointer, buffer.SizeInBytes);
                             info.RefCount = 1;
@@ -494,12 +543,12 @@ namespace Veldrid.D3D11
 
                 lock (_stagingResourcesLock)
                 {
-                    _availableStagingBuffers.Add(staging);
+                    _stagingBuffersInUse.Add(staging);
                 }
             }
         }
 
-        private D3D11Buffer GetFreeStagingBuffer(uint sizeInBytes)
+        public D3D11Buffer GetFreeStagingBuffer(uint sizeInBytes)
         {
             lock (_stagingResourcesLock)
             {
@@ -666,6 +715,12 @@ namespace Veldrid.D3D11
                 buffer.Dispose();
             }
             _availableStagingBuffers.Clear();
+
+            foreach (DeviceBuffer buffer in _stagingBuffersInUse)
+            {
+                buffer.Dispose();
+            }
+            _stagingBuffersInUse.Clear();
 
             _d3d11ResourceFactory.Dispose();
             _mainSwapchain?.Dispose();
