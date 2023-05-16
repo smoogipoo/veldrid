@@ -37,8 +37,7 @@ namespace Veldrid.D3D11
 
         private readonly object _stagingResourcesLock = new object();
         private readonly List<D3D11Buffer> _availableStagingBuffers = new List<D3D11Buffer>();
-        private readonly List<D3D11Buffer> _stagingBuffersInUse = new List<D3D11Buffer>();
-        private readonly List<D3D11Buffer> _returnableStagingBuffers = new List<D3D11Buffer>();
+        private readonly List<InUseBuffer> _stagingBuffersInUse = new List<InUseBuffer>();
 
         public override string DeviceName => _deviceName;
 
@@ -221,8 +220,14 @@ namespace Veldrid.D3D11
         {
             lock (_stagingResourcesLock)
             {
-                _availableStagingBuffers.AddRange(_returnableStagingBuffers);
-                _returnableStagingBuffers.Clear();
+                for (int i = 0; i < _stagingBuffersInUse.Count; i++)
+                {
+                    if (++_stagingBuffersInUse[i].FrameCount > 6)
+                    {
+                        _availableStagingBuffers.Add(_stagingBuffersInUse[i].Buffer);
+                        _stagingBuffersInUse.RemoveAt(i--);
+                    }
+                }
             }
 
             D3D11CommandList d3d11CL = Util.AssertSubtype<CommandList, D3D11CommandList>(cl);
@@ -232,8 +237,6 @@ namespace Veldrid.D3D11
                 if (d3d11CL.DeviceCommandList != null) // CommandList may have been reset in the meantime (resized swapchain).
                 {
                     _immediateContext.ExecuteCommandList(d3d11CL.DeviceCommandList, false);
-
-                    RegisterStagingBufferCompletion();
 
                     d3d11CL.OnCompleted();
                 }
@@ -245,40 +248,15 @@ namespace Veldrid.D3D11
             }
         }
 
-        private void RegisterStagingBufferCompletion()
+        private class InUseBuffer
         {
-            List<D3D11Buffer> buffers;
+            public readonly D3D11Buffer Buffer;
+            public int FrameCount;
 
-            lock (_stagingResourcesLock)
+            public InUseBuffer(D3D11Buffer buffer)
             {
-                if (_stagingBuffersInUse.Count == 0)
-                {
-                    return;
-                }
-
-                buffers = new List<D3D11Buffer>(_stagingBuffersInUse);
-                _stagingBuffersInUse.Clear();
+                Buffer = buffer;
             }
-
-            using ID3D11Device5 device5 = _device.QueryInterface<ID3D11Device5>();
-            using ID3D11DeviceContext4 context4 = _immediateContext.QueryInterface<ID3D11DeviceContext4>();
-
-            ID3D11Fence fence = device5.CreateFence(0);
-            WaitHandle waitHandle = new EventWaitHandle(false, EventResetMode.ManualReset);
-            fence.SetEventOnCompletion(1, waitHandle);
-
-            ThreadPool.RegisterWaitForSingleObject(waitHandle, (_, __) =>
-            {
-                lock (_stagingResourcesLock)
-                {
-                    _returnableStagingBuffers.AddRange(buffers);
-                }
-
-                waitHandle.Dispose();
-                fence.Dispose();
-            }, null, TimeSpan.FromSeconds(60), true); // Should never time out.
-
-            context4.Signal(fence, 1);
         }
 
         public override bool AllowTearing
@@ -543,7 +521,7 @@ namespace Veldrid.D3D11
 
                 lock (_stagingResourcesLock)
                 {
-                    _stagingBuffersInUse.Add(staging);
+                    _stagingBuffersInUse.Add(new InUseBuffer(staging));
                 }
             }
         }
@@ -716,9 +694,9 @@ namespace Veldrid.D3D11
             }
             _availableStagingBuffers.Clear();
 
-            foreach (DeviceBuffer buffer in _stagingBuffersInUse)
+            foreach (InUseBuffer buffer in _stagingBuffersInUse)
             {
-                buffer.Dispose();
+                buffer.Buffer.Dispose();
             }
             _stagingBuffersInUse.Clear();
 
