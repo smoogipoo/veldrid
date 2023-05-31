@@ -14,6 +14,15 @@ using System.Runtime.CompilerServices;
 
 namespace Veldrid.OpenGL
 {
+    public static class Wangs
+    {
+        public static ulong FrameId;
+
+        public static event Action<ulong> FrameCompleted;
+
+        internal static void InvokeFrameCompleted(ulong frameId) => FrameCompleted?.Invoke(frameId);
+    }
+
     internal unsafe class OpenGLGraphicsDevice : GraphicsDevice
     {
         private ResourceFactory _resourceFactory;
@@ -1123,6 +1132,8 @@ namespace Veldrid.OpenGL
 
         private class ExecutionThread
         {
+            private readonly Queue<(ulong frameId, IntPtr fence)> fenceQueue = new Queue<(ulong frameId, IntPtr fence)>();
+
             private readonly OpenGLGraphicsDevice _gd;
             private readonly BlockingCollection<ExecutionThreadWorkItem> _workItems;
             private readonly Action<IntPtr> _makeCurrent;
@@ -1151,6 +1162,24 @@ namespace Veldrid.OpenGL
                 _makeCurrent(_context);
                 while (!_terminated)
                 {
+                    while (fenceQueue.Count > 0)
+                    {
+                        (ulong frameId, IntPtr fence) item = fenceQueue.Peek();
+
+                        int tmp = 0;
+                        glGetSynciv(item.fence, 37140, 1, out _, &tmp);
+
+                        if (tmp == 37145)
+                        {
+                            fenceQueue.Dequeue();
+                            Wangs.InvokeFrameCompleted(item.frameId);
+
+                            continue;
+                        }
+
+                        break;
+                    }
+
                     ExecutionThreadWorkItem workItem = _workItems.Take();
                     ExecuteWorkItem(workItem);
                 }
@@ -1176,6 +1205,8 @@ namespace Veldrid.OpenGL
                                     list.Parent.OnCompleted(list);
                                 }
                             }
+
+                            fenceQueue.Enqueue(((ulong)workItem.Object1, glFenceSync(37143, 0)));
                         }
                         break;
                         case WorkItemType.Map:
@@ -1787,7 +1818,7 @@ namespace Veldrid.OpenGL
             {
                 Type = WorkItemType.ExecuteList;
                 Object0 = commandList;
-                Object1 = null;
+                Object1 = Wangs.FrameId;
 
                 UInt0 = 0;
                 UInt1 = 0;

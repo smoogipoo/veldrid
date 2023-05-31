@@ -1663,6 +1663,16 @@ namespace Veldrid.OpenGLBinding
         public static void glFlush() => p_glFlush();
 
         [UnmanagedFunctionPointer(CallConv)]
+        private delegate IntPtr glFenceSync_t(int condition, int flags);
+        private static glFenceSync_t p_glFenceSync;
+        public static IntPtr glFenceSync(int condition, int flags) => p_glFenceSync(condition, flags);
+
+        [UnmanagedFunctionPointer(CallConv)]
+        private delegate void glGetSynciv_t(IntPtr sync, int pName, int bufSize, out int length, int* values);
+        private static glGetSynciv_t p_glGetSynciv;
+        public static void glGetSynciv(IntPtr sync, int pName, int bufSize, out int length, int* values) => p_glGetSynciv(sync, pName, bufSize, out length, values);
+
+        [UnmanagedFunctionPointer(CallConv)]
         private delegate void glFinish_t();
         private static glFinish_t p_glFinish;
         public static void glFinish() => p_glFinish();
@@ -1877,7 +1887,7 @@ namespace Veldrid.OpenGLBinding
             LoadFunction("glTextureStorage3DMultisample", out p_glTextureStorage3DMultisample);
             LoadFunction("glTexStorage2DMultisample", out p_glTexStorage2DMultisample);
             LoadFunction("glTexStorage3DMultisample", out p_glTexStorage3DMultisample);
-            
+
             LoadFunction("glMapBuffer", out p_glMapBuffer);
             LoadFunction("glMapNamedBuffer", out p_glMapNamedBuffer);
             LoadFunction("glUnmapBuffer", out p_glUnmapBuffer);
@@ -1895,6 +1905,8 @@ namespace Veldrid.OpenGLBinding
             LoadFunction("glGetFramebufferAttachmentParameteriv", out p_glGetFramebufferAttachmentParameteriv);
             LoadFunction("glFlush", out p_glFlush);
             LoadFunction("glFinish", out p_glFinish);
+            LoadFunction("glFenceSync", out p_glFenceSync);
+            LoadFunction("glGetSynciv", out p_glGetSynciv);
 
             LoadFunction("glPushDebugGroup", out p_glPushDebugGroup);
             LoadFunction("glPopDebugGroup", out p_glPopDebugGroup);
