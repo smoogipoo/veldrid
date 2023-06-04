@@ -25,5 +25,9 @@
         /// OpenGL ES.
         /// </summary>
         OpenGLES,
+        /// <summary>
+        /// Direct3D 12.
+        /// </summary>
+        Direct3D12,
     }
 }

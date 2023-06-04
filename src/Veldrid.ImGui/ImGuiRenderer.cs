@@ -261,6 +261,7 @@ namespace Veldrid
         {
             switch (factory.BackendType)
             {
+                case GraphicsBackend.Direct3D12:
                 case GraphicsBackend.Direct3D11:
                 {
                     if (stage == ShaderStages.Vertex && colorSpaceHandling == ColorSpaceHandling.Legacy) { name += "-legacy"; }
