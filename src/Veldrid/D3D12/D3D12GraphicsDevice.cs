@@ -13,7 +13,7 @@ namespace Veldrid.D3D12
         public const int BUFFER_COUNT = 2;
 
         private readonly IDXGIAdapter _dxgiAdapter;
-        private readonly ID3D12Device _device;
+        private readonly ID3D12Device2 _device;
         private readonly IDXGIFactory4 _dxgiFactory;
         private readonly ID3D12CommandQueue _graphicsQueue;
 

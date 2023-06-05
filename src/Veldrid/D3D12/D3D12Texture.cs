@@ -42,7 +42,7 @@ namespace Veldrid.D3D12
             HeapType heapType = HeapType.Default;
             ResourceFlags resourceFlags = ResourceFlags.None;
             ResourceStates initialResourceState = ResourceStates.Common;
-            ClearValue optimizedClearValue = new ClearValue(DxgiFormat, 1.0f, 0);
+            ClearValue optimizedClearValue = new ClearValue(DxgiFormat, 1.0f);
             ResourceDescription resourceDescription;
 
             if ((description.Usage & TextureUsage.Staging) == TextureUsage.Staging)
@@ -131,7 +131,7 @@ namespace Veldrid.D3D12
             Width = (uint)existingTexture.Description.Width;
             Height = (uint)existingTexture.Description.Height;
             Depth = 1;
-            MipLevels = (uint)existingTexture.Description.MipLevels;
+            MipLevels = existingTexture.Description.MipLevels;
             ArrayLayers = (uint)existingTexture.Description.ArraySize;
             Format = format;
             SampleCount = FormatHelpers.GetSampleCount((uint)existingTexture.Description.SampleDescription.Count);

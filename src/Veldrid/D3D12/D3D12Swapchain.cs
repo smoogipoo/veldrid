@@ -100,6 +100,7 @@ namespace Veldrid.D3D12
                 ComObject co = new ComObject(uwpSource.SwapChainPanelNative);
 
                 ISwapChainPanelNative swapchainPanelNative = co.QueryInterfaceOrNull<ISwapChainPanelNative>();
+
                 if (swapchainPanelNative != null)
                 {
                     swapchainPanelNative.SetSwapChain(_dxgiSwapChain);
@@ -107,6 +108,7 @@ namespace Veldrid.D3D12
                 else
                 {
                     ISwapChainBackgroundPanelNative bgPanelNative = co.QueryInterfaceOrNull<ISwapChainBackgroundPanelNative>();
+
                     if (bgPanelNative != null)
                     {
                         bgPanelNative.SetSwapChain(_dxgiSwapChain);
@@ -164,10 +166,7 @@ namespace Veldrid.D3D12
             }
 
             FramebufferDescription desc = new FramebufferDescription(_depthTexture, _backBufferTextures);
-            _framebuffer = new D3D12Framebuffer(_gd.Device, ref desc)
-            {
-                Swapchain = this
-            };
+            _framebuffer = new D3D12Framebuffer(_gd.Device, ref desc) { Swapchain = this };
         }
 
         public override bool SyncToVerticalBlank { get; set; }

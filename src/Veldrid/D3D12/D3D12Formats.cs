@@ -12,129 +12,173 @@ namespace Veldrid.D3D12
             {
                 case PixelFormat.R8_UNorm:
                     return Format.R8_UNorm;
+
                 case PixelFormat.R8_SNorm:
                     return Format.R8_SNorm;
+
                 case PixelFormat.R8_UInt:
                     return Format.R8_UInt;
+
                 case PixelFormat.R8_SInt:
                     return Format.R8_SInt;
 
                 case PixelFormat.R16_UNorm:
                     return depthFormat ? Format.D16_UNorm : Format.R16_UNorm;
+
                 case PixelFormat.R16_SNorm:
                     return Format.R16_SNorm;
+
                 case PixelFormat.R16_UInt:
                     return Format.R16_UInt;
+
                 case PixelFormat.R16_SInt:
                     return Format.R16_SInt;
+
                 case PixelFormat.R16_Float:
                     return Format.R16_Float;
 
                 case PixelFormat.R32_UInt:
                     return Format.R32_UInt;
+
                 case PixelFormat.R32_SInt:
                     return Format.R32_SInt;
+
                 case PixelFormat.R32_Float:
                     return depthFormat ? Format.D32_Float : Format.R32_Float;
 
                 case PixelFormat.R8_G8_UNorm:
                     return Format.R8G8_UNorm;
+
                 case PixelFormat.R8_G8_SNorm:
                     return Format.R8G8_SNorm;
+
                 case PixelFormat.R8_G8_UInt:
                     return Format.R8G8_UInt;
+
                 case PixelFormat.R8_G8_SInt:
                     return Format.R8G8_SInt;
 
                 case PixelFormat.R16_G16_UNorm:
                     return Format.R16G16_UNorm;
+
                 case PixelFormat.R16_G16_SNorm:
                     return Format.R16G16_SNorm;
+
                 case PixelFormat.R16_G16_UInt:
                     return Format.R16G16_UInt;
+
                 case PixelFormat.R16_G16_SInt:
                     return Format.R16G16_SInt;
+
                 case PixelFormat.R16_G16_Float:
                     return Format.R16G16_Float;
 
                 case PixelFormat.R32_G32_UInt:
                     return Format.R32G32_UInt;
+
                 case PixelFormat.R32_G32_SInt:
                     return Format.R32G32_SInt;
+
                 case PixelFormat.R32_G32_Float:
                     return Format.R32G32_Float;
 
                 case PixelFormat.R8_G8_B8_A8_UNorm:
                     return Format.R8G8B8A8_UNorm;
+
                 case PixelFormat.R8_G8_B8_A8_UNorm_SRgb:
                     return Format.R8G8B8A8_UNorm_SRgb;
+
                 case PixelFormat.B8_G8_R8_A8_UNorm:
                     return Format.B8G8R8A8_UNorm;
+
                 case PixelFormat.B8_G8_R8_A8_UNorm_SRgb:
                     return Format.B8G8R8A8_UNorm_SRgb;
+
                 case PixelFormat.R8_G8_B8_A8_SNorm:
                     return Format.R8G8B8A8_SNorm;
+
                 case PixelFormat.R8_G8_B8_A8_UInt:
                     return Format.R8G8B8A8_UInt;
+
                 case PixelFormat.R8_G8_B8_A8_SInt:
                     return Format.R8G8B8A8_SInt;
 
                 case PixelFormat.R16_G16_B16_A16_UNorm:
                     return Format.R16G16B16A16_UNorm;
+
                 case PixelFormat.R16_G16_B16_A16_SNorm:
                     return Format.R16G16B16A16_SNorm;
+
                 case PixelFormat.R16_G16_B16_A16_UInt:
                     return Format.R16G16B16A16_UInt;
+
                 case PixelFormat.R16_G16_B16_A16_SInt:
                     return Format.R16G16B16A16_SInt;
+
                 case PixelFormat.R16_G16_B16_A16_Float:
                     return Format.R16G16B16A16_Float;
 
                 case PixelFormat.R32_G32_B32_A32_UInt:
                     return Format.R32G32B32A32_UInt;
+
                 case PixelFormat.R32_G32_B32_A32_SInt:
                     return Format.R32G32B32A32_SInt;
+
                 case PixelFormat.R32_G32_B32_A32_Float:
                     return Format.R32G32B32A32_Float;
 
                 case PixelFormat.BC1_Rgb_UNorm:
                 case PixelFormat.BC1_Rgba_UNorm:
                     return Format.BC1_UNorm;
+
                 case PixelFormat.BC1_Rgb_UNorm_SRgb:
                 case PixelFormat.BC1_Rgba_UNorm_SRgb:
                     return Format.BC1_UNorm_SRgb;
+
                 case PixelFormat.BC2_UNorm:
                     return Format.BC2_UNorm;
+
                 case PixelFormat.BC2_UNorm_SRgb:
                     return Format.BC2_UNorm_SRgb;
+
                 case PixelFormat.BC3_UNorm:
                     return Format.BC3_UNorm;
+
                 case PixelFormat.BC3_UNorm_SRgb:
                     return Format.BC3_UNorm_SRgb;
+
                 case PixelFormat.BC4_UNorm:
                     return Format.BC4_UNorm;
+
                 case PixelFormat.BC4_SNorm:
                     return Format.BC4_SNorm;
+
                 case PixelFormat.BC5_UNorm:
                     return Format.BC5_UNorm;
+
                 case PixelFormat.BC5_SNorm:
                     return Format.BC5_SNorm;
+
                 case PixelFormat.BC7_UNorm:
                     return Format.BC7_UNorm;
+
                 case PixelFormat.BC7_UNorm_SRgb:
                     return Format.BC7_UNorm_SRgb;
 
                 case PixelFormat.D24_UNorm_S8_UInt:
                     Debug.Assert(depthFormat);
                     return Format.R24G8_Typeless;
+
                 case PixelFormat.D32_Float_S8_UInt:
                     Debug.Assert(depthFormat);
                     return Format.R32G8X24_Typeless;
 
                 case PixelFormat.R10_G10_B10_A2_UNorm:
                     return Format.R10G10B10A2_UNorm;
+
                 case PixelFormat.R10_G10_B10_A2_UInt:
                     return Format.R10G10B10A2_UInt;
+
                 case PixelFormat.R11_G11_B10_Float:
                     return Format.R11G11B10_Float;
 
@@ -148,6 +192,123 @@ namespace Veldrid.D3D12
             }
         }
 
+        internal static Format ToDxgiFormat(IndexFormat format)
+        {
+            switch (format)
+            {
+                case IndexFormat.UInt16:
+                    return Format.R16_UInt;
+
+                case IndexFormat.UInt32:
+                    return Format.R32_UInt;
+
+                default:
+                    throw Illegal.Value<IndexFormat>();
+            }
+        }
+
+        internal static Format ToDxgiFormat(VertexElementFormat format)
+        {
+            switch (format)
+            {
+                case VertexElementFormat.Float1:
+                    return Format.R32_Float;
+
+                case VertexElementFormat.Float2:
+                    return Format.R32G32_Float;
+
+                case VertexElementFormat.Float3:
+                    return Format.R32G32B32_Float;
+
+                case VertexElementFormat.Float4:
+                    return Format.R32G32B32A32_Float;
+
+                case VertexElementFormat.Byte2_Norm:
+                    return Format.R8G8_UNorm;
+
+                case VertexElementFormat.Byte2:
+                    return Format.R8G8_UInt;
+
+                case VertexElementFormat.Byte4_Norm:
+                    return Format.R8G8B8A8_UNorm;
+
+                case VertexElementFormat.Byte4:
+                    return Format.R8G8B8A8_UInt;
+
+                case VertexElementFormat.SByte2_Norm:
+                    return Format.R8G8_SNorm;
+
+                case VertexElementFormat.SByte2:
+                    return Format.R8G8_SInt;
+
+                case VertexElementFormat.SByte4_Norm:
+                    return Format.R8G8B8A8_SNorm;
+
+                case VertexElementFormat.SByte4:
+                    return Format.R8G8B8A8_SInt;
+
+                case VertexElementFormat.UShort2_Norm:
+                    return Format.R16G16_UNorm;
+
+                case VertexElementFormat.UShort2:
+                    return Format.R16G16_UInt;
+
+                case VertexElementFormat.UShort4_Norm:
+                    return Format.R16G16B16A16_UNorm;
+
+                case VertexElementFormat.UShort4:
+                    return Format.R16G16B16A16_UInt;
+
+                case VertexElementFormat.Short2_Norm:
+                    return Format.R16G16_SNorm;
+
+                case VertexElementFormat.Short2:
+                    return Format.R16G16_SInt;
+
+                case VertexElementFormat.Short4_Norm:
+                    return Format.R16G16B16A16_SNorm;
+
+                case VertexElementFormat.Short4:
+                    return Format.R16G16B16A16_SInt;
+
+                case VertexElementFormat.UInt1:
+                    return Format.R32_UInt;
+
+                case VertexElementFormat.UInt2:
+                    return Format.R32G32_UInt;
+
+                case VertexElementFormat.UInt3:
+                    return Format.R32G32B32_UInt;
+
+                case VertexElementFormat.UInt4:
+                    return Format.R32G32B32A32_UInt;
+
+                case VertexElementFormat.Int1:
+                    return Format.R32_SInt;
+
+                case VertexElementFormat.Int2:
+                    return Format.R32G32_SInt;
+
+                case VertexElementFormat.Int3:
+                    return Format.R32G32B32_SInt;
+
+                case VertexElementFormat.Int4:
+                    return Format.R32G32B32A32_SInt;
+
+                case VertexElementFormat.Half1:
+                    return Format.R16_Float;
+
+                case VertexElementFormat.Half2:
+                    return Format.R16G16_Float;
+
+                case VertexElementFormat.Half4:
+                    return Format.R16G16B16A16_Float;
+
+                default:
+                    throw Illegal.Value<VertexElementFormat>();
+            }
+        }
+
         internal static Format GetTypelessFormat(Format format)
         {
             switch (format)
@@ -157,11 +318,13 @@ namespace Veldrid.D3D12
                 case Format.R32G32B32A32_UInt:
                 case Format.R32G32B32A32_SInt:
                     return Format.R32G32B32A32_Typeless;
+
                 case Format.R32G32B32_Typeless:
                 case Format.R32G32B32_Float:
                 case Format.R32G32B32_UInt:
                 case Format.R32G32B32_SInt:
                     return Format.R32G32B32_Typeless;
+
                 case Format.R16G16B16A16_Typeless:
                 case Format.R16G16B16A16_Float:
                 case Format.R16G16B16A16_UNorm:
@@ -169,15 +332,18 @@ namespace Veldrid.D3D12
                 case Format.R16G16B16A16_SNorm:
                 case Format.R16G16B16A16_SInt:
                     return Format.R16G16B16A16_Typeless;
+
                 case Format.R32G32_Typeless:
                 case Format.R32G32_Float:
                 case Format.R32G32_UInt:
                 case Format.R32G32_SInt:
                     return Format.R32G32_Typeless;
+
                 case Format.R10G10B10A2_Typeless:
                 case Format.R10G10B10A2_UNorm:
                 case Format.R10G10B10A2_UInt:
                     return Format.R10G10B10A2_Typeless;
+
                 case Format.R8G8B8A8_Typeless:
                 case Format.R8G8B8A8_UNorm:
                 case Format.R8G8B8A8_UNorm_SRgb:
@@ -185,6 +351,7 @@ namespace Veldrid.D3D12
                 case Format.R8G8B8A8_SNorm:
                 case Format.R8G8B8A8_SInt:
                     return Format.R8G8B8A8_Typeless;
+
                 case Format.R16G16_Typeless:
                 case Format.R16G16_Float:
                 case Format.R16G16_UNorm:
@@ -192,23 +359,27 @@ namespace Veldrid.D3D12
                 case Format.R16G16_SNorm:
                 case Format.R16G16_SInt:
                     return Format.R16G16_Typeless;
+
                 case Format.R32_Typeless:
                 case Format.D32_Float:
                 case Format.R32_Float:
                 case Format.R32_UInt:
                 case Format.R32_SInt:
                     return Format.R32_Typeless;
+
                 case Format.R24G8_Typeless:
                 case Format.D24_UNorm_S8_UInt:
                 case Format.R24_UNorm_X8_Typeless:
                 case Format.X24_Typeless_G8_UInt:
                     return Format.R24G8_Typeless;
+
                 case Format.R8G8_Typeless:
                 case Format.R8G8_UNorm:
                 case Format.R8G8_UInt:
                 case Format.R8G8_SNorm:
                 case Format.R8G8_SInt:
                     return Format.R8G8_Typeless;
+
                 case Format.R16_Typeless:
                 case Format.R16_Float:
                 case Format.D16_UNorm:
@@ -217,6 +388,7 @@ namespace Veldrid.D3D12
                 case Format.R16_SNorm:
                 case Format.R16_SInt:
                     return Format.R16_Typeless;
+
                 case Format.R8_Typeless:
                 case Format.R8_UNorm:
                 case Format.R8_UInt:
@@ -224,34 +396,42 @@ namespace Veldrid.D3D12
                 case Format.R8_SInt:
                 case Format.A8_UNorm:
                     return Format.R8_Typeless;
+
                 case Format.BC1_Typeless:
                 case Format.BC1_UNorm:
                 case Format.BC1_UNorm_SRgb:
                     return Format.BC1_Typeless;
+
                 case Format.BC2_Typeless:
                 case Format.BC2_UNorm:
                 case Format.BC2_UNorm_SRgb:
                     return Format.BC2_Typeless;
+
                 case Format.BC3_Typeless:
                 case Format.BC3_UNorm:
                 case Format.BC3_UNorm_SRgb:
                     return Format.BC3_Typeless;
+
                 case Format.BC4_Typeless:
                 case Format.BC4_UNorm:
                 case Format.BC4_SNorm:
                     return Format.BC4_Typeless;
+
                 case Format.BC5_Typeless:
                 case Format.BC5_UNorm:
                 case Format.BC5_SNorm:
                     return Format.BC5_Typeless;
+
                 case Format.B8G8R8A8_Typeless:
                 case Format.B8G8R8A8_UNorm:
                 case Format.B8G8R8A8_UNorm_SRgb:
                     return Format.B8G8R8A8_Typeless;
+
                 case Format.BC7_Typeless:
                 case Format.BC7_UNorm:
                 case Format.BC7_UNorm_SRgb:
                     return Format.BC7_Typeless;
+
                 default:
                     return format;
             }
@@ -265,14 +445,17 @@ namespace Veldrid.D3D12
             {
                 usage |= TextureUsage.RenderTarget;
             }
+
             if ((flags & ResourceFlags.AllowDepthStencil) != 0)
             {
                 usage |= TextureUsage.DepthStencil;
             }
+
             if ((flags & ResourceFlags.DenyShaderResource) == 0)
             {
                 usage |= TextureUsage.Sampled;
             }
+
             if ((flags & ResourceFlags.AllowUnorderedAccess) != 0)
             {
                 usage |= TextureUsage.Storage;
@@ -287,123 +470,163 @@ namespace Veldrid.D3D12
             {
                 case Format.R8_UNorm:
                     return PixelFormat.R8_UNorm;
+
                 case Format.R8_SNorm:
                     return PixelFormat.R8_SNorm;
+
                 case Format.R8_UInt:
                     return PixelFormat.R8_UInt;
+
                 case Format.R8_SInt:
                     return PixelFormat.R8_SInt;
 
                 case Format.R16_UNorm:
                 case Format.D16_UNorm:
                     return PixelFormat.R16_UNorm;
+
                 case Format.R16_SNorm:
                     return PixelFormat.R16_SNorm;
+
                 case Format.R16_UInt:
                     return PixelFormat.R16_UInt;
+
                 case Format.R16_SInt:
                     return PixelFormat.R16_SInt;
+
                 case Format.R16_Float:
                     return PixelFormat.R16_Float;
 
                 case Format.R32_UInt:
                     return PixelFormat.R32_UInt;
+
                 case Format.R32_SInt:
                     return PixelFormat.R32_SInt;
+
                 case Format.R32_Float:
                 case Format.D32_Float:
                     return PixelFormat.R32_Float;
 
                 case Format.R8G8_UNorm:
                     return PixelFormat.R8_G8_UNorm;
+
                 case Format.R8G8_SNorm:
                     return PixelFormat.R8_G8_SNorm;
+
                 case Format.R8G8_UInt:
                     return PixelFormat.R8_G8_UInt;
+
                 case Format.R8G8_SInt:
                     return PixelFormat.R8_G8_SInt;
 
                 case Format.R16G16_UNorm:
                     return PixelFormat.R16_G16_UNorm;
+
                 case Format.R16G16_SNorm:
                     return PixelFormat.R16_G16_SNorm;
+
                 case Format.R16G16_UInt:
                     return PixelFormat.R16_G16_UInt;
+
                 case Format.R16G16_SInt:
                     return PixelFormat.R16_G16_SInt;
+
                 case Format.R16G16_Float:
                     return PixelFormat.R16_G16_Float;
 
                 case Format.R32G32_UInt:
                     return PixelFormat.R32_G32_UInt;
+
                 case Format.R32G32_SInt:
                     return PixelFormat.R32_G32_SInt;
+
                 case Format.R32G32_Float:
                     return PixelFormat.R32_G32_Float;
 
                 case Format.R8G8B8A8_UNorm:
                     return PixelFormat.R8_G8_B8_A8_UNorm;
+
                 case Format.R8G8B8A8_UNorm_SRgb:
                     return PixelFormat.R8_G8_B8_A8_UNorm_SRgb;
 
                 case Format.B8G8R8A8_UNorm:
                     return PixelFormat.B8_G8_R8_A8_UNorm;
+
                 case Format.B8G8R8A8_UNorm_SRgb:
                     return PixelFormat.B8_G8_R8_A8_UNorm_SRgb;
+
                 case Format.R8G8B8A8_SNorm:
                     return PixelFormat.R8_G8_B8_A8_SNorm;
+
                 case Format.R8G8B8A8_UInt:
                     return PixelFormat.R8_G8_B8_A8_UInt;
+
                 case Format.R8G8B8A8_SInt:
                     return PixelFormat.R8_G8_B8_A8_SInt;
 
                 case Format.R16G16B16A16_UNorm:
                     return PixelFormat.R16_G16_B16_A16_UNorm;
+
                 case Format.R16G16B16A16_SNorm:
                     return PixelFormat.R16_G16_B16_A16_SNorm;
+
                 case Format.R16G16B16A16_UInt:
                     return PixelFormat.R16_G16_B16_A16_UInt;
+
                 case Format.R16G16B16A16_SInt:
                     return PixelFormat.R16_G16_B16_A16_SInt;
+
                 case Format.R16G16B16A16_Float:
                     return PixelFormat.R16_G16_B16_A16_Float;
 
                 case Format.R32G32B32A32_UInt:
                     return PixelFormat.R32_G32_B32_A32_UInt;
+
                 case Format.R32G32B32A32_SInt:
                     return PixelFormat.R32_G32_B32_A32_SInt;
+
                 case Format.R32G32B32A32_Float:
                     return PixelFormat.R32_G32_B32_A32_Float;
 
                 case Format.BC1_UNorm:
                 case Format.BC1_Typeless:
                     return PixelFormat.BC1_Rgba_UNorm;
+
                 case Format.BC2_UNorm:
                     return PixelFormat.BC2_UNorm;
+
                 case Format.BC3_UNorm:
                     return PixelFormat.BC3_UNorm;
+
                 case Format.BC4_UNorm:
                     return PixelFormat.BC4_UNorm;
+
                 case Format.BC4_SNorm:
                     return PixelFormat.BC4_SNorm;
+
                 case Format.BC5_UNorm:
                     return PixelFormat.BC5_UNorm;
+
                 case Format.BC5_SNorm:
                     return PixelFormat.BC5_SNorm;
+
                 case Format.BC7_UNorm:
                     return PixelFormat.BC7_UNorm;
 
                 case Format.D24_UNorm_S8_UInt:
                     return PixelFormat.D24_UNorm_S8_UInt;
+
                 case Format.D32_Float_S8X24_UInt:
                     return PixelFormat.D32_Float_S8_UInt;
 
                 case Format.R10G10B10A2_UInt:
                     return PixelFormat.R10_G10_B10_A2_UInt;
+
                 case Format.R10G10B10A2_UNorm:
                     return PixelFormat.R10_G10_B10_A2_UNorm;
+
                 case Format.R11G11B10_Float:
                     return PixelFormat.R11_G11_B10_Float;
+
                 default:
                     throw Illegal.Value<PixelFormat>();
             }
@@ -415,14 +638,202 @@ namespace Veldrid.D3D12
             {
                 case PixelFormat.R32_Float:
                     return Format.D32_Float;
+
                 case PixelFormat.R16_UNorm:
                     return Format.D16_UNorm;
+
                 case PixelFormat.D24_UNorm_S8_UInt:
                     return Format.D24_UNorm_S8_UInt;
+
                 case PixelFormat.D32_Float_S8_UInt:
                     return Format.D32_Float_S8X24_UInt;
+
                 default:
                     throw new VeldridException("Invalid depth texture format: " + format);
+            }
+        }
+
+        internal static Blend VdToD3D12Blend(BlendFactor factor)
+        {
+            switch (factor)
+            {
+                case BlendFactor.Zero:
+                    return Blend.Zero;
+
+                case BlendFactor.One:
+                    return Blend.One;
+
+                case BlendFactor.SourceAlpha:
+                    return Blend.SourceAlpha;
+
+                case BlendFactor.InverseSourceAlpha:
+                    return Blend.InverseSourceAlpha;
+
+                case BlendFactor.DestinationAlpha:
+                    return Blend.DestinationAlpha;
+
+                case BlendFactor.InverseDestinationAlpha:
+                    return Blend.InverseDestinationAlpha;
+
+                case BlendFactor.SourceColor:
+                    return Blend.SourceColor;
+
+                case BlendFactor.InverseSourceColor:
+                    return Blend.InverseSourceColor;
+
+                case BlendFactor.DestinationColor:
+                    return Blend.DestinationColor;
+
+                case BlendFactor.InverseDestinationColor:
+                    return Blend.InverseDestinationColor;
+
+                case BlendFactor.BlendFactor:
+                    return Blend.BlendFactor;
+
+                case BlendFactor.InverseBlendFactor:
+                    return Blend.InverseBlendFactor;
+
+                default:
+                    throw Illegal.Value<BlendFactor>();
+            }
+        }
+
+        internal static BlendOperation VdToD3D12BlendOperation(BlendFunction function)
+        {
+            switch (function)
+            {
+                case BlendFunction.Add:
+                    return BlendOperation.Add;
+
+                case BlendFunction.Subtract:
+                    return BlendOperation.Subtract;
+
+                case BlendFunction.ReverseSubtract:
+                    return BlendOperation.RevSubtract;
+
+                case BlendFunction.Minimum:
+                    return BlendOperation.Min;
+
+                case BlendFunction.Maximum:
+                    return BlendOperation.Max;
+
+                default:
+                    throw Illegal.Value<BlendFunction>();
+            }
+        }
+
+        internal static ColorWriteEnable VdToD3D12ColorWriteEnable(ColorWriteMask mask)
+        {
+            ColorWriteEnable enable = ColorWriteEnable.None;
+
+            if ((mask & ColorWriteMask.Red) == ColorWriteMask.Red)
+                enable |= ColorWriteEnable.Red;
+            if ((mask & ColorWriteMask.Green) == ColorWriteMask.Green)
+                enable |= ColorWriteEnable.Green;
+            if ((mask & ColorWriteMask.Blue) == ColorWriteMask.Blue)
+                enable |= ColorWriteEnable.Blue;
+            if ((mask & ColorWriteMask.Alpha) == ColorWriteMask.Alpha)
+                enable |= ColorWriteEnable.Alpha;
+
+            return enable;
+        }
+
+        internal static ComparisonFunction VdToD3D12ComparisonFunc(ComparisonKind comparisonKind)
+        {
+            switch (comparisonKind)
+            {
+                case ComparisonKind.Never:
+                    return ComparisonFunction.Never;
+
+                case ComparisonKind.Less:
+                    return ComparisonFunction.Less;
+
+                case ComparisonKind.Equal:
+                    return ComparisonFunction.Equal;
+
+                case ComparisonKind.LessEqual:
+                    return ComparisonFunction.LessEqual;
+
+                case ComparisonKind.Greater:
+                    return ComparisonFunction.Greater;
+
+                case ComparisonKind.NotEqual:
+                    return ComparisonFunction.NotEqual;
+
+                case ComparisonKind.GreaterEqual:
+                    return ComparisonFunction.GreaterEqual;
+
+                case ComparisonKind.Always:
+                    return ComparisonFunction.Always;
+
+                default:
+                    throw Illegal.Value<ComparisonKind>();
+            }
+        }
+
+        internal static Vortice.Direct3D12.StencilOperation VdToD3D12StencilOperation(StencilOperation op)
+        {
+            switch (op)
+            {
+                case StencilOperation.Keep:
+                    return Vortice.Direct3D12.StencilOperation.Keep;
+
+                case StencilOperation.Zero:
+                    return Vortice.Direct3D12.StencilOperation.Zero;
+
+                case StencilOperation.Replace:
+                    return Vortice.Direct3D12.StencilOperation.Replace;
+
+                case StencilOperation.IncrementAndClamp:
+                    return Vortice.Direct3D12.StencilOperation.IncrementSaturate;
+
+                case StencilOperation.DecrementAndClamp:
+                    return Vortice.Direct3D12.StencilOperation.DecrementSaturate;
+
+                case StencilOperation.Invert:
+                    return Vortice.Direct3D12.StencilOperation.Invert;
+
+                case StencilOperation.IncrementAndWrap:
+                    return Vortice.Direct3D12.StencilOperation.Increment;
+
+                case StencilOperation.DecrementAndWrap:
+                    return Vortice.Direct3D12.StencilOperation.Decrement;
+
+                default:
+                    throw Illegal.Value<StencilOperation>();
+            }
+        }
+
+        internal static FillMode VdToD3D12FillMode(PolygonFillMode fillMode)
+        {
+            switch (fillMode)
+            {
+                case PolygonFillMode.Solid:
+                    return FillMode.Solid;
+
+                case PolygonFillMode.Wireframe:
+                    return FillMode.Wireframe;
+
+                default:
+                    throw Illegal.Value<PolygonFillMode>();
+            }
+        }
+
+        internal static CullMode VdToD3D12CullMode(FaceCullMode cullingMode)
+        {
+            switch (cullingMode)
+            {
+                case FaceCullMode.Back:
+                    return CullMode.Back;
+
+                case FaceCullMode.Front:
+                    return CullMode.Front;
+
+                case FaceCullMode.None:
+                    return CullMode.None;
+
+                default:
+                    throw Illegal.Value<FaceCullMode>();
             }
         }
     }
