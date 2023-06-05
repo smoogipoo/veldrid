@@ -145,7 +145,6 @@ namespace Veldrid.D3D12
 
         private protected override void DisposeCore()
         {
-            throw new System.NotImplementedException();
         }
     }
 }

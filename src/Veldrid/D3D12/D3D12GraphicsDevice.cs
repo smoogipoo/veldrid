@@ -216,7 +216,6 @@ namespace Veldrid.D3D12
 
         protected override void PlatformDispose()
         {
-            throw new NotImplementedException();
         }
     }
 }

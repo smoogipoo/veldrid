@@ -106,7 +106,6 @@ namespace Veldrid.D3D12
 
         public override void Dispose()
         {
-            throw new System.NotImplementedException();
         }
     }
 }
