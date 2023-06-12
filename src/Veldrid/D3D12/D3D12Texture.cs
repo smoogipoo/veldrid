@@ -63,6 +63,7 @@ namespace Veldrid.D3D12
                 resourceFlags |= ResourceFlags.AllowRenderTarget;
             }
 
+            // Todo:
             // if ((description.Usage & TextureUsage.Sampled) != TextureUsage.Sampled)
             // {
             //     resourceFlags |= ResourceFlags.DenyShaderResource;

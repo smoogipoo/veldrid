@@ -836,5 +836,86 @@ namespace Veldrid.D3D12
                     throw Illegal.Value<FaceCullMode>();
             }
         }
+
+        internal static Filter ToD3D12Filter(SamplerFilter filter, bool isComparison)
+        {
+            switch (filter)
+            {
+                case SamplerFilter.MinPoint_MagPoint_MipPoint:
+                    return isComparison ? Filter.ComparisonMinMagMipPoint : Filter.MinMagMipPoint;
+
+                case SamplerFilter.MinPoint_MagPoint_MipLinear:
+                    return isComparison ? Filter.ComparisonMinMagPointMipLinear : Filter.MinMagPointMipLinear;
+
+                case SamplerFilter.MinPoint_MagLinear_MipPoint:
+                    return isComparison ? Filter.ComparisonMinPointMagLinearMipPoint : Filter.MinPointMagLinearMipPoint;
+
+                case SamplerFilter.MinPoint_MagLinear_MipLinear:
+                    return isComparison ? Filter.ComparisonMinPointMagMipLinear : Filter.MinPointMagMipLinear;
+
+                case SamplerFilter.MinLinear_MagPoint_MipPoint:
+                    return isComparison ? Filter.ComparisonMinLinearMagMipPoint : Filter.MinLinearMagMipPoint;
+
+                case SamplerFilter.MinLinear_MagPoint_MipLinear:
+                    return isComparison ? Filter.ComparisonMinLinearMagPointMipLinear : Filter.MinLinearMagPointMipLinear;
+
+                case SamplerFilter.MinLinear_MagLinear_MipPoint:
+                    return isComparison ? Filter.ComparisonMinMagLinearMipPoint : Filter.MinMagLinearMipPoint;
+
+                case SamplerFilter.MinLinear_MagLinear_MipLinear:
+                    return isComparison ? Filter.ComparisonMinMagMipLinear : Filter.MinMagMipLinear;
+
+                case SamplerFilter.Anisotropic:
+                    return isComparison ? Filter.ComparisonAnisotropic : Filter.Anisotropic;
+
+                default:
+                    throw Illegal.Value<SamplerFilter>();
+            }
+        }
+
+        internal static TextureAddressMode VdToD3D12AddressMode(SamplerAddressMode mode)
+        {
+            switch (mode)
+            {
+                case SamplerAddressMode.Wrap:
+                    return TextureAddressMode.Wrap;
+
+                case SamplerAddressMode.Mirror:
+                    return TextureAddressMode.Mirror;
+
+                case SamplerAddressMode.Clamp:
+                    return TextureAddressMode.Clamp;
+
+                case SamplerAddressMode.Border:
+                    return TextureAddressMode.Border;
+
+                default:
+                    throw Illegal.Value<SamplerAddressMode>();
+            }
+        }
+
+        internal static Vortice.Direct3D.PrimitiveTopology VdToD3D11PrimitiveTopology(PrimitiveTopology primitiveTopology)
+        {
+            switch (primitiveTopology)
+            {
+                case PrimitiveTopology.TriangleList:
+                    return Vortice.Direct3D.PrimitiveTopology.TriangleList;
+
+                case PrimitiveTopology.TriangleStrip:
+                    return Vortice.Direct3D.PrimitiveTopology.TriangleStrip;
+
+                case PrimitiveTopology.LineList:
+                    return Vortice.Direct3D.PrimitiveTopology.LineList;
+
+                case PrimitiveTopology.LineStrip:
+                    return Vortice.Direct3D.PrimitiveTopology.LineStrip;
+
+                case PrimitiveTopology.PointList:
+                    return Vortice.Direct3D.PrimitiveTopology.PointList;
+
+                default:
+                    throw Illegal.Value<PrimitiveTopology>();
+            }
+        }
     }
 }

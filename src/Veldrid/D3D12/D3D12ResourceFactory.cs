@@ -67,13 +67,16 @@ namespace Veldrid.D3D12
 
         protected override Texture CreateTextureCore(ulong nativeTexture, ref TextureDescription description)
         {
-            ID3D12Texture2D existingTexture = new ID3D12Texture2D((IntPtr)nativeTexture);
+            ID3D12Resource existingTexture = new ID3D12Resource((IntPtr)nativeTexture);
             return new D3D12Texture(existingTexture, description.Type, description.Format);
         }
 
         protected override TextureView CreateTextureViewCore(ref TextureViewDescription description)
         {
-            return new D3D12TextureView(_gd, ref description);
+            return null;
+
+            // Todo:
+            // return new D3D12TextureView(_gd, ref description);
         }
 
         protected override DeviceBuffer CreateBufferCore(ref BufferDescription description)
