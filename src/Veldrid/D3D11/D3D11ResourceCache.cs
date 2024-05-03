@@ -1,29 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
-using Vortice.Direct3D11;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
 
 namespace Veldrid.D3D11
 {
     internal class D3D11ResourceCache : IDisposable
     {
-        private readonly ID3D11Device device;
+        private readonly ComPtr<ID3D11Device> device;
         private readonly object @lock = new object();
 
-        private readonly Dictionary<BlendStateDescription, ID3D11BlendState> blendStates
-            = new Dictionary<BlendStateDescription, ID3D11BlendState>();
+        private readonly Dictionary<BlendStateDescription, ComPtr<ID3D11BlendState>> blendStates
+            = new Dictionary<BlendStateDescription, ComPtr<ID3D11BlendState>>();
 
-        private readonly Dictionary<DepthStencilStateDescription, ID3D11DepthStencilState> depthStencilStates
-            = new Dictionary<DepthStencilStateDescription, ID3D11DepthStencilState>();
+        private readonly Dictionary<DepthStencilStateDescription, ComPtr<ID3D11DepthStencilState>> depthStencilStates
+            = new Dictionary<DepthStencilStateDescription, ComPtr<ID3D11DepthStencilState>>();
 
-        private readonly Dictionary<D3D11RasterizerStateCacheKey, ID3D11RasterizerState> rasterizerStates
-            = new Dictionary<D3D11RasterizerStateCacheKey, ID3D11RasterizerState>();
+        private readonly Dictionary<D3D11RasterizerStateCacheKey, ComPtr<ID3D11RasterizerState>> rasterizerStates
+            = new Dictionary<D3D11RasterizerStateCacheKey, ComPtr<ID3D11RasterizerState>>();
 
-        private readonly Dictionary<InputLayoutCacheKey, ID3D11InputLayout> inputLayouts
-            = new Dictionary<InputLayoutCacheKey, ID3D11InputLayout>();
+        private readonly Dictionary<InputLayoutCacheKey, ComPtr<ID3D11InputLayout>> inputLayouts
+            = new Dictionary<InputLayoutCacheKey, ComPtr<ID3D11InputLayout>>();
 
-        public D3D11ResourceCache(ID3D11Device device)
+        public D3D11ResourceCache(ComPtr<ID3D11Device> device)
         {
             this.device = device;
         }
@@ -50,10 +52,10 @@ namespace Veldrid.D3D11
             bool multisample,
             VertexLayoutDescription[] vertexLayouts,
             byte[] vsBytecode,
-            out ID3D11BlendState blendState,
-            out ID3D11DepthStencilState depthState,
-            out ID3D11RasterizerState rasterState,
-            out ID3D11InputLayout inputLayout)
+            out ComPtr<ID3D11BlendState> blendState,
+            out ComPtr<ID3D11DepthStencilState> depthState,
+            out ComPtr<ID3D11RasterizerState> rasterState,
+            out ComPtr<ID3D11InputLayout> inputLayout)
         {
             lock (@lock)
             {
@@ -64,7 +66,7 @@ namespace Veldrid.D3D11
             }
         }
 
-        private ID3D11BlendState getBlendState(ref BlendStateDescription description)
+        private ComPtr<ID3D11BlendState> getBlendState(ref BlendStateDescription description)
         {
             Debug.Assert(Monitor.IsEntered(@lock));
 
@@ -79,31 +81,34 @@ namespace Veldrid.D3D11
             return blendState;
         }
 
-        private ID3D11BlendState createNewBlendState(ref BlendStateDescription description)
+        private ComPtr<ID3D11BlendState> createNewBlendState(ref BlendStateDescription description)
         {
             var attachmentStates = description.AttachmentStates;
-            var d3dBlendStateDesc = new BlendDescription();
+            var d3dBlendStateDesc = new BlendDesc();
 
             for (int i = 0; i < attachmentStates.Length; i++)
             {
                 var state = attachmentStates[i];
                 d3dBlendStateDesc.RenderTarget[i].BlendEnable = state.BlendEnabled;
-                d3dBlendStateDesc.RenderTarget[i].RenderTargetWriteMask = D3D11Formats.VdToD3D11ColorWriteEnable(state.ColorWriteMask.GetOrDefault());
-                d3dBlendStateDesc.RenderTarget[i].SourceBlend = D3D11Formats.VdToD3D11Blend(state.SourceColorFactor);
-                d3dBlendStateDesc.RenderTarget[i].DestinationBlend = D3D11Formats.VdToD3D11Blend(state.DestinationColorFactor);
-                d3dBlendStateDesc.RenderTarget[i].BlendOperation = D3D11Formats.VdToD3D11BlendOperation(state.ColorFunction);
-                d3dBlendStateDesc.RenderTarget[i].SourceBlendAlpha = D3D11Formats.VdToD3D11Blend(state.SourceAlphaFactor);
-                d3dBlendStateDesc.RenderTarget[i].DestinationBlendAlpha = D3D11Formats.VdToD3D11Blend(state.DestinationAlphaFactor);
-                d3dBlendStateDesc.RenderTarget[i].BlendOperationAlpha = D3D11Formats.VdToD3D11BlendOperation(state.AlphaFunction);
+                d3dBlendStateDesc.RenderTarget[i].RenderTargetWriteMask = (byte)D3D11Formats.VdToD3D11ColorWriteEnable(state.ColorWriteMask.GetOrDefault());
+                d3dBlendStateDesc.RenderTarget[i].SrcBlend = D3D11Formats.VdToD3D11Blend(state.SourceColorFactor);
+                d3dBlendStateDesc.RenderTarget[i].DestBlend = D3D11Formats.VdToD3D11Blend(state.DestinationColorFactor);
+                d3dBlendStateDesc.RenderTarget[i].BlendOp = D3D11Formats.VdToD3D11BlendOperation(state.ColorFunction);
+                d3dBlendStateDesc.RenderTarget[i].SrcBlendAlpha = D3D11Formats.VdToD3D11Blend(state.SourceAlphaFactor);
+                d3dBlendStateDesc.RenderTarget[i].DestBlendAlpha = D3D11Formats.VdToD3D11Blend(state.DestinationAlphaFactor);
+                d3dBlendStateDesc.RenderTarget[i].BlendOpAlpha = D3D11Formats.VdToD3D11BlendOperation(state.AlphaFunction);
             }
 
             d3dBlendStateDesc.AlphaToCoverageEnable = description.AlphaToCoverageEnabled;
             d3dBlendStateDesc.IndependentBlendEnable = true;
 
-            return device.CreateBlendState(d3dBlendStateDesc);
+            ComPtr<ID3D11BlendState> result = null;
+            SilkMarshal.ThrowHResult(device.CreateBlendState(d3dBlendStateDesc, ref result));
+
+            return result;
         }
 
-        private ID3D11DepthStencilState getDepthStencilState(ref DepthStencilStateDescription description)
+        private ComPtr<ID3D11DepthStencilState> getDepthStencilState(ref DepthStencilStateDescription description)
         {
             Debug.Assert(Monitor.IsEntered(@lock));
 
@@ -117,9 +122,11 @@ namespace Veldrid.D3D11
             return dss;
         }
 
-        private ID3D11DepthStencilState createNewDepthStencilState(ref DepthStencilStateDescription description)
+        private ComPtr<ID3D11DepthStencilState> createNewDepthStencilState(ref DepthStencilStateDescription description)
         {
-            var dssDesc = new DepthStencilDescription
+            ComPtr<ID3D11DepthStencilState> result = null;
+
+            SilkMarshal.ThrowHResult(device.CreateDepthStencilState(new DepthStencilDesc
             {
                 DepthFunc = D3D11Formats.VdToD3D11ComparisonFunc(description.DepthComparison),
                 DepthEnable = description.DepthTestEnabled,
@@ -129,14 +136,14 @@ namespace Veldrid.D3D11
                 BackFace = toD3D11StencilOpDesc(description.StencilBack),
                 StencilReadMask = description.StencilReadMask,
                 StencilWriteMask = description.StencilWriteMask
-            };
+            }, ref result));
 
-            return device.CreateDepthStencilState(dssDesc);
+            return result;
         }
 
-        private DepthStencilOperationDescription toD3D11StencilOpDesc(StencilBehaviorDescription sbd)
+        private DepthStencilopDesc toD3D11StencilOpDesc(StencilBehaviorDescription sbd)
         {
-            return new DepthStencilOperationDescription
+            return new DepthStencilopDesc
             {
                 StencilFunc = D3D11Formats.VdToD3D11ComparisonFunc(sbd.Comparison),
                 StencilPassOp = D3D11Formats.VdToD3D11StencilOperation(sbd.Pass),
@@ -145,7 +152,7 @@ namespace Veldrid.D3D11
             };
         }
 
-        private ID3D11RasterizerState getRasterizerState(ref RasterizerStateDescription description, bool multisample)
+        private ComPtr<ID3D11RasterizerState> getRasterizerState(ref RasterizerStateDescription description, bool multisample)
         {
             Debug.Assert(Monitor.IsEntered(@lock));
             var key = new D3D11RasterizerStateCacheKey(description, multisample);
@@ -159,9 +166,11 @@ namespace Veldrid.D3D11
             return rasterizerState;
         }
 
-        private ID3D11RasterizerState createNewRasterizerState(ref D3D11RasterizerStateCacheKey key)
+        private ComPtr<ID3D11RasterizerState> createNewRasterizerState(ref D3D11RasterizerStateCacheKey key)
         {
-            var rssDesc = new RasterizerDescription
+            ComPtr<ID3D11RasterizerState> result = null;
+
+            SilkMarshal.ThrowHResult(device.CreateRasterizerState(new RasterizerDesc
             {
                 CullMode = D3D11Formats.VdToD3D11CullMode(key.VeldridDescription.CullMode),
                 FillMode = D3D11Formats.VdToD3D11FillMode(key.VeldridDescription.FillMode),
@@ -169,16 +178,17 @@ namespace Veldrid.D3D11
                 ScissorEnable = key.VeldridDescription.ScissorTestEnabled,
                 FrontCounterClockwise = key.VeldridDescription.FrontFace == FrontFace.CounterClockwise,
                 MultisampleEnable = key.Multisampled
-            };
+            }, ref result));
 
-            return device.CreateRasterizerState(rssDesc);
+            return result;
         }
 
-        private ID3D11InputLayout getInputLayout(VertexLayoutDescription[] vertexLayouts, byte[] vsBytecode)
+        private ComPtr<ID3D11InputLayout> getInputLayout(VertexLayoutDescription[] vertexLayouts, byte[] vsBytecode)
         {
             Debug.Assert(Monitor.IsEntered(@lock));
 
-            if (vsBytecode == null || vertexLayouts == null || vertexLayouts.Length == 0) return null;
+            if (vsBytecode == null || vertexLayouts == null || vertexLayouts.Length == 0)
+                return null;
 
             var tempKey = InputLayoutCacheKey.CreateTempKey(vertexLayouts);
 
@@ -192,39 +202,45 @@ namespace Veldrid.D3D11
             return inputLayout;
         }
 
-        private ID3D11InputLayout createNewInputLayout(VertexLayoutDescription[] vertexLayouts, byte[] vsBytecode)
+        private unsafe ComPtr<ID3D11InputLayout> createNewInputLayout(VertexLayoutDescription[] vertexLayouts, byte[] vsBytecode)
         {
             int totalCount = 0;
             for (int i = 0; i < vertexLayouts.Length; i++) totalCount += vertexLayouts[i].Elements.Length;
 
             int element = 0; // Total element index across slots.
-            var elements = new InputElementDescription[totalCount];
+            var elements = new InputElementDesc[totalCount];
             var si = new SemanticIndices();
 
             for (int slot = 0; slot < vertexLayouts.Length; slot++)
             {
                 var elementDescs = vertexLayouts[slot].Elements;
                 uint stepRate = vertexLayouts[slot].InstanceStepRate;
-                int currentOffset = 0;
+                uint currentOffset = 0;
 
                 for (int i = 0; i < elementDescs.Length; i++)
                 {
                     var desc = elementDescs[i];
-                    elements[element] = new InputElementDescription(
-                        getSemanticString(desc.Semantic),
-                        SemanticIndices.GetAndIncrement(ref si, desc.Semantic),
-                        D3D11Formats.ToDxgiFormat(desc.Format),
-                        desc.Offset != 0 ? (int)desc.Offset : currentOffset,
-                        slot,
-                        stepRate == 0 ? InputClassification.PerVertexData : InputClassification.PerInstanceData,
-                        (int)stepRate);
 
-                    currentOffset += (int)FormatSizeHelpers.GetSizeInBytes(desc.Format);
+                    elements[element] = new InputElementDesc
+                    {
+                        SemanticName = (byte*)Marshal.StringToHGlobalAuto(getSemanticString(desc.Semantic)).ToPointer(),
+                        SemanticIndex = (uint)SemanticIndices.GetAndIncrement(ref si, desc.Semantic),
+                        AlignedByteOffset = desc.Offset != 0 ? desc.Offset : currentOffset,
+                        Format = D3D11Formats.ToDxgiFormat(desc.Format),
+                        InputSlot = (uint)slot,
+                        InputSlotClass = stepRate == 0 ? InputClassification.PerVertexData : InputClassification.PerInstanceData,
+                        InstanceDataStepRate = stepRate
+                    };
+
+                    currentOffset += FormatSizeHelpers.GetSizeInBytes(desc.Format);
                     element += 1;
                 }
             }
 
-            return device.CreateInputLayout(elements, vsBytecode);
+            ComPtr<ID3D11InputLayout> result = default;
+            SilkMarshal.ThrowHResult(device.CreateInputLayout(in elements[0], (uint)elements.Length, in vsBytecode[0], (UIntPtr)vsBytecode.Length, ref result));
+
+            return result;
         }
 
         private string getSemanticString(VertexElementSemantic semantic)

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
 using Vortice;
 using Vortice.Direct3D11;
 using Vortice.Mathematics;
@@ -24,7 +26,7 @@ namespace Veldrid.D3D11
             }
         }
 
-        internal ID3D11DeviceContext DeviceContext { get; }
+        internal ComPtr<ID3D11DeviceContext> DeviceContext { get; }
 
         private readonly D3D11GraphicsDevice gd;
         private readonly ID3D11DeviceContext1 context1;
@@ -1085,7 +1087,7 @@ namespace Veldrid.D3D11
                 if (primitiveTopology != d3dPipeline.PrimitiveTopology)
                 {
                     primitiveTopology = d3dPipeline.PrimitiveTopology;
-                    DeviceContext.IASetPrimitiveTopology(primitiveTopology);
+                    DeviceContext.IASetPrimitiveTopology();
                 }
 
                 if (inputLayout != d3dPipeline.InputLayout)

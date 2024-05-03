@@ -1,14 +1,14 @@
 ﻿using System;
-using Vortice.Direct3D11;
-using Vortice.Mathematics;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
 
 namespace Veldrid.D3D11
 {
     internal class D3D11Sampler : Sampler
     {
-        public ID3D11SamplerState DeviceSampler { get; }
+        public ComPtr<ID3D11SamplerState> DeviceSampler => deviceSampler;
 
-        public override bool IsDisposed => DeviceSampler.NativePointer == IntPtr.Zero;
+        public override bool IsDisposed => isDisposed;
 
         public override string Name
         {
@@ -16,16 +16,26 @@ namespace Veldrid.D3D11
             set
             {
                 name = value;
-                DeviceSampler.DebugName = value;
+                // DeviceSampler.DebugName = value;
             }
         }
 
-        private string name;
+        private readonly ComPtr<ID3D11SamplerState> deviceSampler;
 
-        public D3D11Sampler(ID3D11Device device, ref SamplerDescription description)
+        private string name;
+        private bool isDisposed;
+
+        public unsafe D3D11Sampler(ComPtr<ID3D11Device> device, ref SamplerDescription description)
         {
-            var comparision = description.ComparisonKind == null ? ComparisonFunction.Never : D3D11Formats.VdToD3D11ComparisonFunc(description.ComparisonKind.Value);
-            var samplerStateDesc = new Vortice.Direct3D11.SamplerDescription
+            RgbaFloat rgbaColor = description.BorderColor switch
+            {
+                SamplerBorderColor.TransparentBlack => new RgbaFloat(0, 0, 0, 0),
+                SamplerBorderColor.OpaqueBlack => new RgbaFloat(0, 0, 0, 1),
+                SamplerBorderColor.OpaqueWhite => new RgbaFloat(1, 1, 1, 1),
+                _ => throw Illegal.Value<SamplerBorderColor>()
+            };
+
+            SilkMarshal.ThrowHResult(device.CreateSamplerState(new SamplerDesc
             {
                 AddressU = D3D11Formats.VdToD3D11AddressMode(description.AddressModeU),
                 AddressV = D3D11Formats.VdToD3D11AddressMode(description.AddressModeV),
@@ -33,40 +43,27 @@ namespace Veldrid.D3D11
                 Filter = D3D11Formats.ToD3D11Filter(description.Filter, description.ComparisonKind.HasValue),
                 MinLOD = description.MinimumLod,
                 MaxLOD = description.MaximumLod,
-                MaxAnisotropy = (int)description.MaximumAnisotropy,
-                ComparisonFunc = comparision,
+                MaxAnisotropy = description.MaximumAnisotropy,
+                ComparisonFunc = description.ComparisonKind == null
+                    ? ComparisonFunc.Never
+                    : D3D11Formats.VdToD3D11ComparisonFunc(description.ComparisonKind.Value),
                 MipLODBias = description.LodBias,
-                BorderColor = toRawColor4(description.BorderColor)
-            };
-
-            DeviceSampler = device.CreateSamplerState(samplerStateDesc);
+                BorderColor = (float*)&rgbaColor
+            }, ref deviceSampler));
         }
 
         #region Disposal
 
         public override void Dispose()
         {
-            DeviceSampler.Dispose();
+            if (isDisposed)
+                return;
+
+            DeviceSampler.Release();
+
+            isDisposed = true;
         }
 
         #endregion
-
-        private static Color4 toRawColor4(SamplerBorderColor borderColor)
-        {
-            switch (borderColor)
-            {
-                case SamplerBorderColor.TransparentBlack:
-                    return new Color4(0, 0, 0, 0);
-
-                case SamplerBorderColor.OpaqueBlack:
-                    return new Color4(0, 0, 0, 1);
-
-                case SamplerBorderColor.OpaqueWhite:
-                    return new Color4(1, 1, 1, 1);
-
-                default:
-                    throw Illegal.Value<SamplerBorderColor>();
-            }
-        }
     }
 }

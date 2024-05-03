@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Runtime.InteropServices;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
 using Vortice.Direct3D11;
 
 namespace Veldrid.D3D11
@@ -7,7 +10,7 @@ namespace Veldrid.D3D11
     {
         public override GraphicsBackend BackendType => GraphicsBackend.Direct3D11;
         private readonly D3D11GraphicsDevice gd;
-        private readonly ID3D11Device device;
+        private readonly ComPtr<ID3D11Device> device;
         private readonly D3D11ResourceCache cache;
 
         public D3D11ResourceFactory(D3D11GraphicsDevice gd)
@@ -85,7 +88,7 @@ namespace Veldrid.D3D11
 
         protected override Texture CreateTextureCore(ulong nativeTexture, ref TextureDescription description)
         {
-            var existingTexture = new ID3D11Texture2D((IntPtr)nativeTexture);
+            var existingTexture = new ComPtr<ID3D11Texture2D>(new ComObject(Marshal.GetObjectForIUnknown((IntPtr)nativeTexture)));
             return new D3D11Texture(existingTexture, description.Type, description.Format);
         }
 

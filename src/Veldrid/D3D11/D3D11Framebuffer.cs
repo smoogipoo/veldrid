@@ -1,14 +1,15 @@
 ﻿using System;
-using Vortice.Direct3D11;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
 
 namespace Veldrid.D3D11
 {
     internal class D3D11Framebuffer : Framebuffer
     {
-        public ID3D11RenderTargetView[] RenderTargetViews { get; }
-        public ID3D11DepthStencilView DepthStencilView { get; }
+        public ComPtr<ID3D11RenderTargetView>[] RenderTargetViews { get; }
+        public ComPtr<ID3D11DepthStencilView> DepthStencilView => depthStencilView;
 
-        public override bool IsDisposed => disposed;
+        public override bool IsDisposed => isDisposed;
 
         public override string Name
         {
@@ -16,24 +17,27 @@ namespace Veldrid.D3D11
             set
             {
                 name = value;
-                for (int i = 0; i < RenderTargetViews.Length; i++) RenderTargetViews[i].DebugName = value + "_RTV" + i;
-
-                if (DepthStencilView != null) DepthStencilView.DebugName = value + "_DSV";
+                // for (int i = 0; i < RenderTargetViews.Length; i++) RenderTargetViews[i].DebugName = value + "_RTV" + i;
+                //
+                // if (DepthStencilView != null) DepthStencilView.DebugName = value + "_DSV";
             }
         }
 
         // Only non-null if this is the Framebuffer for a Swapchain.
         internal D3D11Swapchain Swapchain { get; set; }
-        private string name;
-        private bool disposed;
 
-        public D3D11Framebuffer(ID3D11Device device, ref FramebufferDescription description)
+        private readonly ComPtr<ID3D11DepthStencilView> depthStencilView;
+
+        private string name;
+        private bool isDisposed;
+
+        public D3D11Framebuffer(ComPtr<ID3D11Device> device, ref FramebufferDescription description)
             : base(description.DepthTarget, description.ColorTargets)
         {
             if (description.DepthTarget != null)
             {
                 var d3dDepthTarget = Util.AssertSubtype<Texture, D3D11Texture>(description.DepthTarget.Value.Target);
-                var dsvDesc = new DepthStencilViewDescription
+                var dsvDesc = new DepthStencilViewDesc
                 {
                     Format = D3D11Formats.GetDepthFormat(d3dDepthTarget.Format)
                 };
@@ -42,40 +46,40 @@ namespace Veldrid.D3D11
                 {
                     if (d3dDepthTarget.SampleCount == TextureSampleCount.Count1)
                     {
-                        dsvDesc.ViewDimension = DepthStencilViewDimension.Texture2D;
-                        dsvDesc.Texture2D.MipSlice = (int)description.DepthTarget.Value.MipLevel;
+                        dsvDesc.ViewDimension = DsvDimension.Texture2D;
+                        dsvDesc.Texture2D.MipSlice = description.DepthTarget.Value.MipLevel;
                     }
                     else
-                        dsvDesc.ViewDimension = DepthStencilViewDimension.Texture2DMultisampled;
+                        dsvDesc.ViewDimension = DsvDimension.Texture2Dms;
                 }
                 else
                 {
                     if (d3dDepthTarget.SampleCount == TextureSampleCount.Count1)
                     {
-                        dsvDesc.ViewDimension = DepthStencilViewDimension.Texture2DArray;
-                        dsvDesc.Texture2DArray.FirstArraySlice = (int)description.DepthTarget.Value.ArrayLayer;
+                        dsvDesc.ViewDimension = DsvDimension.Texture2Darray;
+                        dsvDesc.Texture2DArray.FirstArraySlice = description.DepthTarget.Value.ArrayLayer;
                         dsvDesc.Texture2DArray.ArraySize = 1;
-                        dsvDesc.Texture2DArray.MipSlice = (int)description.DepthTarget.Value.MipLevel;
+                        dsvDesc.Texture2DArray.MipSlice = description.DepthTarget.Value.MipLevel;
                     }
                     else
                     {
-                        dsvDesc.ViewDimension = DepthStencilViewDimension.Texture2DMultisampledArray;
-                        dsvDesc.Texture2DMSArray.FirstArraySlice = (int)description.DepthTarget.Value.ArrayLayer;
+                        dsvDesc.ViewDimension = DsvDimension.Texture2Dmsarray;
+                        dsvDesc.Texture2DMSArray.FirstArraySlice = description.DepthTarget.Value.ArrayLayer;
                         dsvDesc.Texture2DMSArray.ArraySize = 1;
                     }
                 }
 
-                DepthStencilView = device.CreateDepthStencilView(d3dDepthTarget.DeviceTexture, dsvDesc);
+                SilkMarshal.ThrowHResult(device.CreateDepthStencilView(d3dDepthTarget.DeviceTexture, dsvDesc, ref depthStencilView));
             }
 
             if (description.ColorTargets != null && description.ColorTargets.Length > 0)
             {
-                RenderTargetViews = new ID3D11RenderTargetView[description.ColorTargets.Length];
+                RenderTargetViews = new ComPtr<ID3D11RenderTargetView>[description.ColorTargets.Length];
 
                 for (int i = 0; i < RenderTargetViews.Length; i++)
                 {
                     var d3dColorTarget = Util.AssertSubtype<Texture, D3D11Texture>(description.ColorTargets[i].Target);
-                    var rtvDesc = new RenderTargetViewDescription
+                    var rtvDesc = new RenderTargetViewDesc
                     {
                         Format = D3D11Formats.ToDxgiFormat(d3dColorTarget.Format, false)
                     };
@@ -84,21 +88,21 @@ namespace Veldrid.D3D11
                     {
                         if (d3dColorTarget.SampleCount == TextureSampleCount.Count1)
                         {
-                            rtvDesc.ViewDimension = RenderTargetViewDimension.Texture2DArray;
-                            rtvDesc.Texture2DArray = new Texture2DArrayRenderTargetView
+                            rtvDesc.ViewDimension = RtvDimension.Texture2Darray;
+                            rtvDesc.Texture2DArray = new Tex2DArrayRtv
                             {
                                 ArraySize = 1,
-                                FirstArraySlice = (int)description.ColorTargets[i].ArrayLayer,
-                                MipSlice = (int)description.ColorTargets[i].MipLevel
+                                FirstArraySlice = description.ColorTargets[i].ArrayLayer,
+                                MipSlice = description.ColorTargets[i].MipLevel
                             };
                         }
                         else
                         {
-                            rtvDesc.ViewDimension = RenderTargetViewDimension.Texture2DMultisampledArray;
-                            rtvDesc.Texture2DMSArray = new Texture2DMultisampledArrayRenderTargetView
+                            rtvDesc.ViewDimension = RtvDimension.Texture2Dmsarray;
+                            rtvDesc.Texture2DMSArray = new Tex2DmsArrayRtv
                             {
                                 ArraySize = 1,
-                                FirstArraySlice = (int)description.ColorTargets[i].ArrayLayer
+                                FirstArraySlice = description.ColorTargets[i].ArrayLayer
                             };
                         }
                     }
@@ -106,31 +110,33 @@ namespace Veldrid.D3D11
                     {
                         if (d3dColorTarget.SampleCount == TextureSampleCount.Count1)
                         {
-                            rtvDesc.ViewDimension = RenderTargetViewDimension.Texture2D;
-                            rtvDesc.Texture2D.MipSlice = (int)description.ColorTargets[i].MipLevel;
+                            rtvDesc.ViewDimension = RtvDimension.Texture2D;
+                            rtvDesc.Texture2D.MipSlice = description.ColorTargets[i].MipLevel;
                         }
                         else
-                            rtvDesc.ViewDimension = RenderTargetViewDimension.Texture2DMultisampled;
+                            rtvDesc.ViewDimension = RtvDimension.Texture2Dms;
                     }
 
-                    RenderTargetViews[i] = device.CreateRenderTargetView(d3dColorTarget.DeviceTexture, rtvDesc);
+                    SilkMarshal.ThrowHResult(device.CreateRenderTargetView(d3dColorTarget.DeviceTexture, rtvDesc, ref RenderTargetViews[i]));
                 }
             }
             else
-                RenderTargetViews = Array.Empty<ID3D11RenderTargetView>();
+                RenderTargetViews = Array.Empty<ComPtr<ID3D11RenderTargetView>>();
         }
 
         #region Disposal
 
         public override void Dispose()
         {
-            if (!disposed)
-            {
-                DepthStencilView?.Dispose();
-                foreach (var rtv in RenderTargetViews) rtv.Dispose();
+            if (isDisposed)
+                return;
 
-                disposed = true;
-            }
+            DepthStencilView.Release();
+
+            foreach (var rtv in RenderTargetViews)
+                rtv.Release();
+
+            isDisposed = true;
         }
 
         #endregion

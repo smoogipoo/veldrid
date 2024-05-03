@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
 using Vortice.Direct3D11;
 using Vortice.Mathematics;
 
@@ -8,11 +10,11 @@ namespace Veldrid.D3D11
     internal class D3D11Pipeline : Pipeline
     {
         public ID3D11BlendState BlendState { get; }
-        public Color4 BlendFactor { get; }
+        public RgbaFloat BlendFactor { get; }
         public ID3D11DepthStencilState DepthStencilState { get; }
         public uint StencilReference { get; }
         public ID3D11RasterizerState RasterizerState { get; }
-        public Vortice.Direct3D.PrimitiveTopology PrimitiveTopology { get; }
+        public D3DPrimitiveTopology PrimitiveTopology { get; }
         public ID3D11InputLayout InputLayout { get; }
         public ID3D11VertexShader VertexShader { get; }
         public ID3D11GeometryShader GeometryShader { get; } // May be null.
@@ -70,7 +72,7 @@ namespace Veldrid.D3D11
                 out var inputLayout);
 
             BlendState = blendState;
-            BlendFactor = new Color4(description.BlendState.BlendFactor.ToVector4());
+            BlendFactor = description.BlendState.BlendFactor;
             DepthStencilState = depthStencilState;
             StencilReference = description.DepthStencilState.StencilReference;
             RasterizerState = rasterizerState;

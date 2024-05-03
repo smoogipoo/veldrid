@@ -1,7 +1,8 @@
-﻿using System;
-using System.Diagnostics;
-using Vortice.Direct3D11;
-using Vortice.DXGI;
+﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
+using Silk.NET.DXGI;
 
 namespace Veldrid.D3D11
 {
@@ -16,9 +17,10 @@ namespace Veldrid.D3D11
         public override TextureUsage Usage { get; }
         public override TextureType Type { get; }
         public override TextureSampleCount SampleCount { get; }
-        public override bool IsDisposed => DeviceTexture.NativePointer == IntPtr.Zero;
+        public override bool IsDisposed => isDisposed;
 
-        public ID3D11Resource DeviceTexture { get; }
+        public ComPtr<ID3D11Resource> DeviceTexture { get; }
+
         public Format DxgiFormat { get; }
         public Format TypelessDxgiFormat { get; }
 
@@ -28,13 +30,14 @@ namespace Veldrid.D3D11
             set
             {
                 name = value;
-                DeviceTexture.DebugName = value;
+                // DeviceTexture.DebugName = value;
             }
         }
 
         private string name;
+        private bool isDisposed;
 
-        public D3D11Texture(ID3D11Device device, ref TextureDescription description)
+        public unsafe D3D11Texture(ComPtr<ID3D11Device> device, ref TextureDescription description)
         {
             Width = description.Width;
             Height = description.Height;
@@ -51,41 +54,41 @@ namespace Veldrid.D3D11
                 (description.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil);
             TypelessDxgiFormat = D3D11Formats.GetTypelessFormat(DxgiFormat);
 
-            var cpuFlags = CpuAccessFlags.None;
-            var resourceUsage = ResourceUsage.Default;
-            var bindFlags = BindFlags.None;
-            var optionFlags = ResourceOptionFlags.None;
+            var cpuFlags = CpuAccessFlag.None;
+            var resourceUsage = Silk.NET.Direct3D11.Usage.Default;
+            var bindFlags = BindFlag.None;
+            var optionFlags = ResourceMiscFlag.None;
 
-            if ((description.Usage & TextureUsage.RenderTarget) == TextureUsage.RenderTarget) bindFlags |= BindFlags.RenderTarget;
+            if ((description.Usage & TextureUsage.RenderTarget) == TextureUsage.RenderTarget) bindFlags |= BindFlag.RenderTarget;
 
-            if ((description.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil) bindFlags |= BindFlags.DepthStencil;
+            if ((description.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil) bindFlags |= BindFlag.DepthStencil;
 
-            if ((description.Usage & TextureUsage.Sampled) == TextureUsage.Sampled) bindFlags |= BindFlags.ShaderResource;
+            if ((description.Usage & TextureUsage.Sampled) == TextureUsage.Sampled) bindFlags |= BindFlag.ShaderResource;
 
-            if ((description.Usage & TextureUsage.Storage) == TextureUsage.Storage) bindFlags |= BindFlags.UnorderedAccess;
+            if ((description.Usage & TextureUsage.Storage) == TextureUsage.Storage) bindFlags |= BindFlag.UnorderedAccess;
 
             if ((description.Usage & TextureUsage.Staging) == TextureUsage.Staging)
             {
-                cpuFlags = CpuAccessFlags.Read | CpuAccessFlags.Write;
-                resourceUsage = ResourceUsage.Staging;
+                cpuFlags = CpuAccessFlag.Read | CpuAccessFlag.Write;
+                resourceUsage = Silk.NET.Direct3D11.Usage.Staging;
             }
 
             if ((description.Usage & TextureUsage.GenerateMipmaps) != 0)
             {
-                bindFlags |= BindFlags.RenderTarget | BindFlags.ShaderResource;
-                optionFlags |= ResourceOptionFlags.GenerateMips;
+                bindFlags |= BindFlag.RenderTarget | BindFlag.ShaderResource;
+                optionFlags |= ResourceMiscFlag.GenerateMips;
             }
 
-            int arraySize = (int)description.ArrayLayers;
+            uint arraySize = description.ArrayLayers;
 
             if ((description.Usage & TextureUsage.Cubemap) == TextureUsage.Cubemap)
             {
-                optionFlags |= ResourceOptionFlags.TextureCube;
+                optionFlags |= ResourceMiscFlag.Texturecube;
                 arraySize *= 6;
             }
 
-            int roundedWidth = (int)description.Width;
-            int roundedHeight = (int)description.Height;
+            uint roundedWidth = description.Width;
+            uint roundedHeight = description.Height;
 
             if (FormatHelpers.IsCompressedFormat(description.Format))
             {
@@ -95,73 +98,84 @@ namespace Veldrid.D3D11
 
             if (Type == TextureType.Texture1D)
             {
-                var desc1D = new Texture1DDescription
+                ComPtr<ID3D11Texture1D> comTexture = null;
+
+                SilkMarshal.ThrowHResult(device.CreateTexture1D(new Texture1DDesc
                 {
                     Width = roundedWidth,
-                    MipLevels = (int)description.MipLevels,
+                    MipLevels = description.MipLevels,
                     ArraySize = arraySize,
                     Format = TypelessDxgiFormat,
-                    BindFlags = bindFlags,
-                    CPUAccessFlags = cpuFlags,
+                    BindFlags = (uint)bindFlags,
+                    CPUAccessFlags = (uint)cpuFlags,
                     Usage = resourceUsage,
-                    MiscFlags = optionFlags
-                };
+                    MiscFlags = (uint)optionFlags
+                }, Unsafe.NullRef<SubresourceData>(), ref comTexture));
 
-                DeviceTexture = device.CreateTexture1D(desc1D);
+                DeviceTexture = D3D11Util.ComCast<ID3D11Texture1D, ID3D11Resource>(comTexture);
             }
             else if (Type == TextureType.Texture2D)
             {
-                var deviceDescription = new Texture2DDescription
+                ComPtr<ID3D11Texture2D> comTexture = null;
+
+                SilkMarshal.ThrowHResult(device.CreateTexture2D(new Texture2DDesc
                 {
                     Width = roundedWidth,
                     Height = roundedHeight,
-                    MipLevels = (int)description.MipLevels,
+                    MipLevels = description.MipLevels,
                     ArraySize = arraySize,
                     Format = TypelessDxgiFormat,
-                    BindFlags = bindFlags,
-                    CPUAccessFlags = cpuFlags,
+                    BindFlags = (uint)bindFlags,
+                    CPUAccessFlags = (uint)cpuFlags,
                     Usage = resourceUsage,
-                    SampleDescription = new SampleDescription((int)FormatHelpers.GetSampleCountUInt32(SampleCount), 0),
-                    MiscFlags = optionFlags
-                };
+                    SampleDesc = new SampleDesc(FormatHelpers.GetSampleCountUInt32(SampleCount), 0),
+                    MiscFlags = (uint)optionFlags
+                }, Unsafe.NullRef<SubresourceData>(), ref comTexture));
 
-                DeviceTexture = device.CreateTexture2D(deviceDescription);
+                DeviceTexture = D3D11Util.ComCast<ID3D11Texture2D, ID3D11Resource>(comTexture);
             }
             else
             {
                 Debug.Assert(Type == TextureType.Texture3D);
-                var desc3D = new Texture3DDescription
+
+                ComPtr<ID3D11Texture3D> comTexture = null;
+
+                SilkMarshal.ThrowHResult(device.CreateTexture3D(new Texture3DDesc
                 {
                     Width = roundedWidth,
                     Height = roundedHeight,
-                    Depth = (int)description.Depth,
-                    MipLevels = (int)description.MipLevels,
+                    Depth = description.Depth,
+                    MipLevels = description.MipLevels,
                     Format = TypelessDxgiFormat,
-                    BindFlags = bindFlags,
-                    CPUAccessFlags = cpuFlags,
+                    BindFlags = (uint)bindFlags,
+                    CPUAccessFlags = (uint)cpuFlags,
                     Usage = resourceUsage,
-                    MiscFlags = optionFlags
-                };
+                    MiscFlags = (uint)optionFlags
+                }, Unsafe.NullRef<SubresourceData>(), ref comTexture));
 
-                DeviceTexture = device.CreateTexture3D(desc3D);
+                DeviceTexture = D3D11Util.ComCast<ID3D11Texture3D, ID3D11Resource>(comTexture);
             }
         }
 
-        public D3D11Texture(ID3D11Texture2D existingTexture, TextureType type, PixelFormat format)
+        public unsafe D3D11Texture(ComPtr<ID3D11Texture2D> existingTexture, TextureType type, PixelFormat format)
         {
-            DeviceTexture = existingTexture;
-            Width = (uint)existingTexture.Description.Width;
-            Height = (uint)existingTexture.Description.Height;
+            DeviceTexture = new ComPtr<ID3D11Resource>((ID3D11Resource*)existingTexture.Handle);
+
+            Texture2DDesc existingDescription = default;
+            existingTexture.GetDesc(ref existingDescription);
+
+            Width = existingDescription.Width;
+            Height = existingDescription.Height;
             Depth = 1;
-            MipLevels = (uint)existingTexture.Description.MipLevels;
-            ArrayLayers = (uint)existingTexture.Description.ArraySize;
+            MipLevels = existingDescription.MipLevels;
+            ArrayLayers = existingDescription.ArraySize;
             Format = format;
-            SampleCount = FormatHelpers.GetSampleCount((uint)existingTexture.Description.SampleDescription.Count);
+            SampleCount = FormatHelpers.GetSampleCount(existingDescription.SampleDesc.Count);
             Type = type;
             Usage = D3D11Formats.GetVdUsage(
-                existingTexture.Description.BindFlags,
-                existingTexture.Description.CPUAccessFlags,
-                existingTexture.Description.MiscFlags);
+                (BindFlag)existingDescription.BindFlags,
+                (CpuAccessFlag)existingDescription.CPUAccessFlags,
+                (ResourceMiscFlag)existingDescription.MiscFlags);
 
             DxgiFormat = D3D11Formats.ToDxgiFormat(
                 format,
@@ -178,7 +192,12 @@ namespace Veldrid.D3D11
 
         private protected override void DisposeCore()
         {
+            if (isDisposed)
+                return;
+
             DeviceTexture.Dispose();
+
+            isDisposed = true;
         }
     }
 }

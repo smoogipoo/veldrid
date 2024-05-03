@@ -4,6 +4,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Silk.NET.Core.Native;
+using Silk.NET.Direct3D11;
+using Silk.NET.DXGI;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.Direct3D11.Debug;
@@ -35,7 +38,7 @@ namespace Veldrid.D3D11
 
         public override ResourceFactory ResourceFactory => d3d11ResourceFactory;
 
-        public ID3D11Device Device => device;
+        public ComPtr<ID3D11Device> Device => device;
 
         public IDXGIAdapter Adapter => dxgiAdapter;
 
@@ -203,7 +206,7 @@ namespace Veldrid.D3D11
                 true,
                 device.FeatureLevel >= FeatureLevel.Level_11_1,
                 device.FeatureLevel >= FeatureLevel.Level_11_1,
-                device.CheckFeatureSupport<FeatureDataDoubles>(Feature.Doubles).DoublePrecisionFloatShaderOps);
+                device.CheckFeatureSupport<FeatureDataDoubles>(Silk.NET.Direct3D11.Feature.Doubles).DoublePrecisionFloatShaderOps);
 
             d3d11ResourceFactory = new D3D11ResourceFactory(this);
             d3d11Info = new BackendInfoD3D11(this);
