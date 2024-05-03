@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Silk.NET.Core.Native;
-using Silk.NET.Direct3D.Compilers;
 using Silk.NET.Direct3D11;
 
 namespace Veldrid.D3D11
@@ -11,7 +10,7 @@ namespace Veldrid.D3D11
     {
         public ComPtr<ID3D11DeviceChild> DeviceShader { get; }
 
-        public override bool IsDisposed => DeviceShader.NativePointer == IntPtr.Zero;
+        public override bool IsDisposed => isDisposed;
         public byte[] Bytecode { get; internal set; }
 
         public override string Name
@@ -26,6 +25,7 @@ namespace Veldrid.D3D11
 
         private readonly ID3D11Device device;
         private string name;
+        private bool isDisposed;
 
         public D3D11Shader(ID3D11Device device, ShaderDescription description)
             : base(description.Stage, description.EntryPoint)
@@ -84,15 +84,6 @@ namespace Veldrid.D3D11
             }
         }
 
-        #region Disposal
-
-        public override void Dispose()
-        {
-            DeviceShader.Dispose();
-        }
-
-        #endregion
-
         private byte[] compileCode(ShaderDescription description)
         {
             string profile;
@@ -100,39 +91,36 @@ namespace Veldrid.D3D11
             switch (description.Stage)
             {
                 case ShaderStages.Vertex:
-                    profile = device.GetFeatureLevel() >= FeatureLevel.Level_11_0 ? "vs_5_0" : "vs_4_0";
+                    profile = device.GetFeatureLevel() >= D3DFeatureLevel.Level110 ? "vs_5_0" : "vs_4_0";
                     break;
 
                 case ShaderStages.Geometry:
-                    profile = device.GetFeatureLevel() >= FeatureLevel.Level_11_0 ? "gs_5_0" : "gs_4_0";
+                    profile = device.GetFeatureLevel() >= D3DFeatureLevel.Level110 ? "gs_5_0" : "gs_4_0";
                     break;
 
                 case ShaderStages.TessellationControl:
-                    profile = device.GetFeatureLevel() >= FeatureLevel.Level_11_0 ? "hs_5_0" : "hs_4_0";
+                    profile = device.GetFeatureLevel() >= D3DFeatureLevel.Level110 ? "hs_5_0" : "hs_4_0";
                     break;
 
                 case ShaderStages.TessellationEvaluation:
-                    profile = device.GetFeatureLevel() >= FeatureLevel.Level_11_0 ? "ds_5_0" : "ds_4_0";
+                    profile = device.GetFeatureLevel() >= D3DFeatureLevel.Level110 ? "ds_5_0" : "ds_4_0";
                     break;
 
                 case ShaderStages.Fragment:
-                    profile = device.GetFeatureLevel() >= FeatureLevel.Level_11_0 ? "ps_5_0" : "ps_4_0";
+                    profile = device.GetFeatureLevel() >= D3DFeatureLevel.Level110 ? "ps_5_0" : "ps_4_0";
                     break;
 
                 case ShaderStages.Compute:
-                    profile = device.GetFeatureLevel() >= FeatureLevel.Level_11_0 ? "cs_5_0" : "cs_4_0";
+                    profile = device.GetFeatureLevel() >= D3DFeatureLevel.Level110 ? "cs_5_0" : "cs_4_0";
                     break;
 
                 default:
                     throw Illegal.Value<ShaderStages>();
             }
 
-            Silk.NET.Direct3D.Compilers.D3DCompiler compiler = D3DCompiler.GetApi();
-            compiler.Compile(description.ShaderBytes,);
+            var flags = description.Debug ? Vortice.D3DCompiler.ShaderFlags.Debug : Vortice.D3DCompiler.ShaderFlags.OptimizationLevel3;
 
-            var flags = description.Debug ? ShaderFlags.Debug : ShaderFlags.OptimizationLevel3;
-
-            Compiler.Compile(description.ShaderBytes, null!, null!,
+            Vortice.D3DCompiler.Compiler.Compile(description.ShaderBytes, null!, null!,
                 description.EntryPoint, null!,
                 profile, flags, out var result, out var error);
 
@@ -140,5 +128,19 @@ namespace Veldrid.D3D11
 
             return result.AsBytes();
         }
+
+        #region Disposal
+
+        public override void Dispose()
+        {
+            if (isDisposed)
+                return;
+
+            DeviceShader.Dispose();
+
+            isDisposed = true;
+        }
+
+        #endregion
     }
 }
