@@ -364,6 +364,17 @@ namespace Veldrid.WGPU
             throw Illegal.Value<uint>();
         }
 
+        public static TextureViewDimension VdToWGPUTextureViewDimention(uint depth)
+        {
+            if (depth == 1)
+                return TextureViewDimension.Dimension2D;
+
+            if (depth > 1)
+                return TextureViewDimension.Dimension3D;
+
+            throw Illegal.Value<uint>();
+        }
+
         public static Silk.NET.WebGPU.BufferUsage VdToWGPUBufferUsage(BufferUsage usage)
         {
             var wgpuUsage = Silk.NET.WebGPU.BufferUsage.CopySrc | Silk.NET.WebGPU.BufferUsage.CopyDst;

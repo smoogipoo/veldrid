@@ -58,7 +58,7 @@ namespace Veldrid.WGPU
             => new WGPUTexture(gd, ref description);
 
         protected override TextureView CreateTextureViewCore(ref TextureViewDescription description)
-            => throw new NotImplementedException();
+            => new WGPUTextureView(gd, ref description);
 
         protected override DeviceBuffer CreateBufferCore(ref BufferDescription description)
             => new WGPUBuffer(gd, ref description);

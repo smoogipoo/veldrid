@@ -32,8 +32,6 @@ namespace Veldrid.WGPU
         public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description)
             : this(gd, ref description, null)
         {
-            this.gd = gd;
-
             Texture = gd.WebGPU.DeviceCreateTexture(gd.NativeDevice, new TextureDescriptor
             {
                 Usage = WGPUFormats.VdToWGPUTextureUsage(Usage),
@@ -47,6 +45,8 @@ namespace Veldrid.WGPU
 
         public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description, Silk.NET.WebGPU.Texture* texture)
         {
+            this.gd = gd;
+
             Texture = texture;
 
             Width = description.Width;
