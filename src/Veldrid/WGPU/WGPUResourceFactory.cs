@@ -63,9 +63,7 @@ namespace Veldrid.WGPU
             => throw new NotImplementedException();
 
         protected override DeviceBuffer CreateBufferCore(ref BufferDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUBuffer(gd, ref description);
 
         protected override Sampler CreateSamplerCore(ref SamplerDescription description)
             => new WGPUSampler(gd, ref description);

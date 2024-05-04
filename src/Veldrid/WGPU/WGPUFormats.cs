@@ -363,5 +363,36 @@ namespace Veldrid.WGPU
 
             throw Illegal.Value<uint>();
         }
+
+        public static Silk.NET.WebGPU.BufferUsage VdToWGPUBufferUsage(BufferUsage usage)
+        {
+            var wgpuUsage = Silk.NET.WebGPU.BufferUsage.CopySrc | Silk.NET.WebGPU.BufferUsage.CopyDst;
+
+            if ((usage & BufferUsage.IndexBuffer) == BufferUsage.IndexBuffer)
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Index;
+
+            if ((usage & BufferUsage.IndirectBuffer) == BufferUsage.IndirectBuffer)
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Indirect;
+
+            if ((usage & BufferUsage.StructuredBufferReadOnly) == BufferUsage.StructuredBufferReadOnly
+                || (usage & BufferUsage.StructuredBufferReadWrite) == BufferUsage.StructuredBufferReadWrite)
+            {
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Storage;
+            }
+
+            if ((usage & BufferUsage.UniformBuffer) == BufferUsage.UniformBuffer)
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Uniform;
+
+            if ((usage & BufferUsage.VertexBuffer) == BufferUsage.VertexBuffer)
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Vertex;
+
+            if ((usage & BufferUsage.Staging) == BufferUsage.Staging)
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapRead | Silk.NET.WebGPU.BufferUsage.MapWrite;
+
+            if ((usage & BufferUsage.Dynamic) == BufferUsage.Dynamic)
+                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapWrite;
+
+            return wgpuUsage;
+        }
     }
 }
