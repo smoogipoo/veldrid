@@ -48,7 +48,6 @@ namespace Veldrid.WGPU
             NativeAdapter = requestAdapter(new RequestAdapterOptions
             {
                 CompatibleSurface = NativeSurface,
-                BackendType = Silk.NET.WebGPU.BackendType.Metal
             });
 
             uint featureCount = (uint)WebGPU.AdapterEnumerateFeatures(NativeAdapter, null);
