@@ -7,6 +7,7 @@ using Veldrid.D3D11;
 using Veldrid.MTL;
 using Veldrid.OpenGL;
 using Veldrid.Vk;
+using Veldrid.WGPU;
 
 namespace Veldrid
 {
@@ -1401,5 +1402,10 @@ namespace Veldrid
             return new MtlGraphicsDevice(options, swapchainDesc, metalOptions);
         }
 #endif
+
+        public static GraphicsDevice CreateWebGPU(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
+        {
+            return new WGPUGraphicsDevice(options, swapchainDescription);
+        }
     }
 }
