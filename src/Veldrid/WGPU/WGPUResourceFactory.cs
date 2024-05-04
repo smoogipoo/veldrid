@@ -5,7 +5,7 @@ using System;
 
 namespace Veldrid.WGPU
 {
-    internal class WGPUResourceFactory : ResourceFactory
+    internal unsafe class WGPUResourceFactory : ResourceFactory
     {
         public override GraphicsBackend BackendType => gd.BackendType;
 
@@ -54,14 +54,10 @@ namespace Veldrid.WGPU
         }
 
         protected override Texture CreateTextureCore(ulong nativeTexture, ref TextureDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUTexture(gd, ref description, (Silk.NET.WebGPU.Texture*)nativeTexture);
 
         protected override Texture CreateTextureCore(ref TextureDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUTexture(gd, ref description);
 
         protected override TextureView CreateTextureViewCore(ref TextureViewDescription description)
             => throw new NotImplementedException();
