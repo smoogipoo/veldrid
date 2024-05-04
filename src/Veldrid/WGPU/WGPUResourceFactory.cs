@@ -23,9 +23,7 @@ namespace Veldrid.WGPU
         }
 
         public override Framebuffer CreateFramebuffer(ref FramebufferDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUFramebuffer(gd, ref description);
 
         public override CommandList CreateCommandList(ref CommandListDescription description)
             => new WGPUCommandList(gd, ref description);
