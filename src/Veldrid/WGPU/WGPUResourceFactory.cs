@@ -1,8 +1,6 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
-
 namespace Veldrid.WGPU
 {
     internal unsafe class WGPUResourceFactory : ResourceFactory
@@ -33,9 +31,7 @@ namespace Veldrid.WGPU
             => new WGPUResourceSet(gd, ref description);
 
         public override Fence CreateFence(bool signaled)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUFence(signaled);
 
         public override Swapchain CreateSwapchain(ref SwapchainDescription description)
             => new WGPUSwapchain(gd, ref description);
