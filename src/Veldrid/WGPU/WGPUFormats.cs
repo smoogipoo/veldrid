@@ -353,6 +353,164 @@ namespace Veldrid.WGPU
             }
         }
 
+        public static PixelFormat WGPUToVdPixelFormat(TextureFormat format)
+        {
+            switch (format)
+            {
+                case TextureFormat.Rgba8Unorm:
+                    return PixelFormat.R8G8B8A8UNorm;
+
+                case TextureFormat.Bgra8Unorm:
+                    return PixelFormat.B8G8R8A8UNorm;
+
+                case TextureFormat.R8Unorm:
+                    return PixelFormat.R8UNorm;
+
+                case TextureFormat.Rgba32float:
+                    return PixelFormat.R32G32B32A32Float;
+
+                case TextureFormat.Depth32float:
+                case TextureFormat.R32float:
+                    return PixelFormat.R32Float;
+
+                case TextureFormat.BC3RgbaUnorm:
+                    return PixelFormat.Bc3UNorm;
+
+                case TextureFormat.Depth24PlusStencil8:
+                    return PixelFormat.D24UNormS8UInt;
+
+                case TextureFormat.Depth32floatStencil8:
+                    return PixelFormat.D32FloatS8UInt;
+
+                case TextureFormat.Rgba32Uint:
+                    return PixelFormat.R32G32B32A32UInt;
+
+                case TextureFormat.RG8Snorm:
+                    return PixelFormat.R8G8SNorm;
+
+                case TextureFormat.Rgba8Snorm:
+                    return PixelFormat.R8G8B8A8SNorm;
+
+                case TextureFormat.Rgba8Uint:
+                    return PixelFormat.R8G8B8A8UInt;
+
+                case TextureFormat.Rgba8Sint:
+                    return PixelFormat.R8G8B8A8SInt;
+
+                case TextureFormat.Rgba16Uint:
+                    return PixelFormat.R16G16B16A16UInt;
+
+                case TextureFormat.Rgba16Sint:
+                    return PixelFormat.R16G16B16A16SInt;
+
+                case TextureFormat.Rgba16float:
+                    return PixelFormat.R16G16B16A16Float;
+
+                case TextureFormat.Rgba32Sint:
+                    return PixelFormat.R32G32B32A32SInt;
+
+                case TextureFormat.Etc2Rgb8Unorm:
+                    return PixelFormat.Etc2R8G8B8UNorm;
+
+                case TextureFormat.Etc2Rgb8A1Unorm:
+                    return PixelFormat.Etc2R8G8B8A1UNorm;
+
+                case TextureFormat.Etc2Rgba8Unorm:
+                    return PixelFormat.Etc2R8G8B8A8UNorm;
+
+                case TextureFormat.BC4RUnorm:
+                    return PixelFormat.Bc4UNorm;
+
+                case TextureFormat.BC4RSnorm:
+                    return PixelFormat.Bc4SNorm;
+
+                case TextureFormat.BC5RGUnorm:
+                    return PixelFormat.Bc5UNorm;
+
+                case TextureFormat.BC5RGSnorm:
+                    return PixelFormat.Bc5SNorm;
+
+                case TextureFormat.BC7RgbaUnorm:
+                    return PixelFormat.Bc7UNorm;
+
+                case TextureFormat.Rgba8UnormSrgb:
+                    return PixelFormat.R8G8B8A8UNormSRgb;
+
+                case TextureFormat.Bgra8UnormSrgb:
+                    return PixelFormat.B8G8R8A8UNormSRgb;
+
+                case TextureFormat.BC1RgbaUnorm:
+                    return PixelFormat.Bc1RgbaUNorm;
+
+                case TextureFormat.R8Snorm:
+                    return PixelFormat.R8SNorm;
+
+                case TextureFormat.R8Uint:
+                    return PixelFormat.R8UInt;
+
+                case TextureFormat.R8Sint:
+                    return PixelFormat.R8SInt;
+
+                case TextureFormat.R16Uint:
+                    return PixelFormat.R16UInt;
+
+                case TextureFormat.R16Sint:
+                    return PixelFormat.R16SInt;
+
+                case TextureFormat.R32Uint:
+                    return PixelFormat.R32UInt;
+
+                case TextureFormat.R32Sint:
+                    return PixelFormat.R32SInt;
+
+                case TextureFormat.RG8Unorm:
+                    return PixelFormat.R8G8UNorm;
+
+                case TextureFormat.RG8Uint:
+                    return PixelFormat.R8G8UInt;
+
+                case TextureFormat.RG8Sint:
+                    return PixelFormat.R8G8SInt;
+
+                case TextureFormat.RG16Uint:
+                    return PixelFormat.R16G16UInt;
+
+                case TextureFormat.RG16Sint:
+                    return PixelFormat.R16G16SInt;
+
+                case TextureFormat.RG16float:
+                    return PixelFormat.R16G16Float;
+
+                case TextureFormat.RG32Uint:
+                    return PixelFormat.R32G32UInt;
+
+                case TextureFormat.RG32Sint:
+                    return PixelFormat.R32G32SInt;
+
+                case TextureFormat.RG32float:
+                    return PixelFormat.R32G32Float;
+
+                case TextureFormat.BC1RgbaUnormSrgb:
+                case TextureFormat.BC2RgbaUnormSrgb:
+                    return PixelFormat.Bc1RgbaUNormSRgb;
+
+                case TextureFormat.BC3RgbaUnormSrgb:
+                    return PixelFormat.Bc3UNormSRgb;
+
+                case TextureFormat.BC7RgbaUnormSrgb:
+                    return PixelFormat.Bc7UNormSRgb;
+
+                case TextureFormat.R16float:
+                    return PixelFormat.R16Float;
+
+                case TextureFormat.Depth16Unorm:
+                    return PixelFormat.R16UNorm;
+
+                default:
+                    throw Illegal.Value<TextureFormat>();
+            }
+        }
+
         public static TextureDimension VdToWGPUTextureDimention(uint depth)
         {
             if (depth == 1)

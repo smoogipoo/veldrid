@@ -9,5 +9,9 @@ namespace Veldrid.WGPU
             : base(description.DepthTarget, description.ColorTargets)
         {
         }
+
+        protected WGPUFramebufferBase()
+        {
+        }
     }
 }

@@ -5,20 +5,22 @@ using Silk.NET.WebGPU;
 
 namespace Veldrid.WGPU
 {
-    internal unsafe class WGPUTextureView : TextureView
+    internal unsafe class WGPUTextureView : WGPUTextureViewBase
     {
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly Silk.NET.WebGPU.TextureView* View;
+        public override Silk.NET.WebGPU.TextureView* View { get; }
 
         private readonly WGPUGraphicsDevice gd;
 
         private bool isDisposed;
 
         public WGPUTextureView(WGPUGraphicsDevice gd, ref TextureViewDescription description)
-            : this(gd, ref description, null)
+            : base(ref description)
         {
+            this.gd = gd;
+
             WGPUTexture wgpuTexture = Util.AssertSubtype<Texture, WGPUTexture>(description.Target);
 
             View = gd.WebGPU.TextureCreateView(wgpuTexture.Texture, new TextureViewDescriptor
@@ -31,14 +33,6 @@ namespace Veldrid.WGPU
                 ArrayLayerCount = ArrayLayers,
                 Aspect = TextureAspect.All
             });
-        }
-
-        public WGPUTextureView(WGPUGraphicsDevice gd, ref TextureViewDescription description, Silk.NET.WebGPU.TextureView* view)
-            : base(ref description)
-        {
-            this.gd = gd;
-
-            View = view;
         }
 
         public override void Dispose()
