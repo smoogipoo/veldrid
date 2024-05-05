@@ -28,6 +28,8 @@
         /// <summary>
         ///     OpenGL ES.
         /// </summary>
-        OpenGLES
+        OpenGLES,
+
+        WebGPU
     }
 }

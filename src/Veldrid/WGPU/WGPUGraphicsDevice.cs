@@ -210,16 +210,7 @@ namespace Veldrid.WGPU
         {
         }
 
-        public override GraphicsBackend BackendType => adapterProperties.BackendType switch
-        {
-            Silk.NET.WebGPU.BackendType.Metal => GraphicsBackend.Metal,
-            Silk.NET.WebGPU.BackendType.Vulkan => GraphicsBackend.Vulkan,
-            Silk.NET.WebGPU.BackendType.OpenGL => GraphicsBackend.OpenGL,
-            Silk.NET.WebGPU.BackendType.OpenGles => GraphicsBackend.OpenGLES,
-            Silk.NET.WebGPU.BackendType.D3D11 => GraphicsBackend.Direct3D11,
-            Silk.NET.WebGPU.BackendType.D3D12 => GraphicsBackend.Direct3D11, // Todo: Not correct!
-            _ => throw new ArgumentOutOfRangeException()
-        };
+        public override GraphicsBackend BackendType => GraphicsBackend.WebGPU;
 
         public override bool WaitForFence(Fence fence, ulong nanosecondTimeout)
         {
@@ -317,6 +308,12 @@ namespace Veldrid.WGPU
         private protected override bool GetPixelFormatSupportCore(PixelFormat format, TextureType type, TextureUsage usage, out PixelFormatProperties properties)
         {
             throw new NotImplementedException();
+        }
+
+        public override bool GetWebGPUInfo(out BackendInfoWebGPU info)
+        {
+            info = new BackendInfoWebGPU(this);
+            return true;
         }
 
         private ManualResetEvent[] getResetEventArray(int length)

@@ -211,6 +211,9 @@ namespace Veldrid
 #else
                     return false;
 #endif
+                case GraphicsBackend.WebGPU:
+                    return true;
+
                 default:
                     throw Illegal.Value<GraphicsBackend>();
             }
@@ -1108,6 +1111,19 @@ namespace Veldrid
             return -1.0f;
         }
 #endif
+
+        public virtual bool GetWebGPUInfo(out BackendInfoWebGPU info)
+        {
+            info = null;
+            return false;
+        }
+
+        public BackendInfoWebGPU GetWebGPUInfo()
+        {
+            if (!GetWebGPUInfo(out var info)) throw new VeldridException($"{nameof(GetWebGPUInfo)} can only be used on a WebGPU GraphicsDevice.");
+
+            return info;
+        }
 
 #if !EXCLUDE_D3D11_BACKEND
         /// <summary>
