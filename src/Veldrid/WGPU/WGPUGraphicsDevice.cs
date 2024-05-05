@@ -7,7 +7,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Silk.NET.WebGPU;
-using Silk.NET.WebGPU.Extensions.Dawn;
 using Veldrid.MetalBindings;
 using Veldrid.MTL;
 
@@ -28,7 +27,6 @@ namespace Veldrid.WGPU
         public override GraphicsDeviceFeatures Features { get; }
 
         public readonly WebGPU WebGPU;
-        public readonly Dawn Dawn;
 
         public readonly Instance* NativeInstance;
         public readonly Surface* NativeSurface;
@@ -37,6 +35,7 @@ namespace Veldrid.WGPU
 
         private readonly AdapterProperties adapterProperties;
         private readonly SupportedLimits deviceLimits;
+        private readonly SurfaceCapabilities surfaceCapabilities;
 
         private readonly Queue* commandQueue;
 
@@ -46,7 +45,6 @@ namespace Veldrid.WGPU
         public WGPUGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDesc)
         {
             WebGPU = WebGPU.GetApi();
-            Dawn = new Dawn(WebGPU.Context);
 
             NativeInstance = WebGPU.CreateInstance(new InstanceDescriptor());
             NativeSurface = createSurface(swapchainDesc);
@@ -85,6 +83,7 @@ namespace Veldrid.WGPU
             NativeDevice = requestDevice(new DeviceDescriptor());
             WebGPU.DeviceSetUncapturedErrorCallback(NativeDevice, PfnErrorCallback.From(onUncapturedError), null);
 
+            WebGPU.SurfaceGetCapabilities(NativeSurface, NativeAdapter, ref surfaceCapabilities);
             WebGPU.AdapterGetProperties(NativeAdapter, ref adapterProperties);
             WebGPU.DeviceGetLimits(NativeDevice, ref deviceLimits);
 
@@ -287,12 +286,10 @@ namespace Veldrid.WGPU
 
         private protected override void WaitForIdleCore()
         {
-            throw new NotImplementedException();
         }
 
         private protected override void WaitForNextFrameReadyCore()
         {
-            throw new NotImplementedException();
         }
 
         private protected override void UpdateTextureCore(Texture texture, IntPtr source, uint sizeInBytes, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)

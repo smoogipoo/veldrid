@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using Silk.NET.WebGPU;
-using Silk.NET.WebGPU.Extensions.Dawn;
 
 namespace Veldrid.WGPU
 {
@@ -32,7 +31,7 @@ namespace Veldrid.WGPU
             this.depthFormat = depthFormat;
         }
 
-        public void SetSwapChain(SwapChain* swapChain, uint width, uint height)
+        public void Resize(uint width, uint height)
         {
             colorTargets?[0].Target.Dispose();
             depthTarget?.Target.Dispose();
@@ -52,7 +51,7 @@ namespace Veldrid.WGPU
                 SampleCount = TextureSampleCount.Count1
             };
 
-            colorTargets![0] = new FramebufferAttachment(new WGPUSwapchainTexture(gd, swapChain, ref colorDescription), 0);
+            colorTargets![0] = new FramebufferAttachment(new WGPUSwapchainTexture(gd, ref colorDescription), 0);
 
             if (depthFormat is PixelFormat depth)
             {
@@ -69,7 +68,7 @@ namespace Veldrid.WGPU
                     SampleCount = TextureSampleCount.Count1
                 };
 
-                depthTarget = new FramebufferAttachment(new WGPUSwapchainTexture(gd, swapChain, ref depthDescription), 0);
+                depthTarget = new FramebufferAttachment(new WGPUSwapchainTexture(gd, ref depthDescription), 0);
             }
         }
 

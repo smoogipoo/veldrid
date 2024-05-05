@@ -219,7 +219,9 @@ namespace Veldrid.WGPU
                     return TextureFormat.Rgb10A2Unorm;
 
                 case PixelFormat.R10G10B10A2UInt:
-                    return TextureFormat.Rgb10A2Uint;
+                    // Supported from 2.21.0 onwards.
+                    // return TextureFormat.Rgb10A2Uint;
+                    throw Illegal.Value<PixelFormat>();
 
                 case PixelFormat.R11G11B10Float:
                     return TextureFormat.RG11B10Ufloat;

@@ -1,7 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU.Extensions.Dawn;
+using Silk.NET.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -11,36 +11,47 @@ namespace Veldrid.WGPU
         public override bool IsDisposed => isDisposed;
 
         private readonly WGPUGraphicsDevice gd;
-        private readonly SwapChain* swapChain;
 
+        private Silk.NET.WebGPU.Texture* texture;
         private Silk.NET.WebGPU.TextureView* view;
+
         private bool isDisposed;
 
-        public WGPUSwapchainTextureView(WGPUGraphicsDevice gd, SwapChain* swapChain, TextureViewDescription description)
+        public WGPUSwapchainTextureView(WGPUGraphicsDevice gd, TextureViewDescription description)
             : base(ref description)
         {
             this.gd = gd;
-            this.swapChain = swapChain;
         }
 
         public override Silk.NET.WebGPU.TextureView* View
         {
             get
             {
-                if (view == null)
-                    view = gd.Dawn.SwapChainGetCurrentTextureView(swapChain);
+                if (view != null)
+                    return view;
 
-                return view;
+                SurfaceTexture surfaceTexture = default;
+                gd.WebGPU.SurfaceGetCurrentTexture(gd.NativeSurface, ref surfaceTexture);
+
+                if (surfaceTexture.Status != SurfaceGetCurrentTextureStatus.Success)
+                {
+                    // Todo:
+                }
+
+                return view = gd.WebGPU.TextureCreateView(surfaceTexture.Texture, null);
             }
         }
 
         public void Release()
         {
-            if (view == null)
-                return;
+            if (view != null)
+                gd.WebGPU.TextureViewRelease(view);
 
-            gd.WebGPU.TextureViewRelease(view);
+            if (texture != null)
+                gd.WebGPU.TextureRelease(texture);
+
             view = null;
+            texture = null;
         }
 
         public override void Dispose()

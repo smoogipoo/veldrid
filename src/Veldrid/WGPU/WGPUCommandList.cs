@@ -17,6 +17,8 @@ namespace Veldrid.WGPU
         private CommandEncoder* encoder;
         private CommandBuffer* commandBuffer;
 
+        private RenderPassEncoder* renderPass;
+
         public WGPUCommandList(WGPUGraphicsDevice gd, ref CommandListDescription description)
             : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
         {
@@ -123,12 +125,31 @@ namespace Veldrid.WGPU
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            throw new NotImplementedException();
+            var colorTexture = Util.AssertSubtype<Texture, WGPUTexture>(gd.SwapchainFramebuffer.ColorTargets[0].Target);
+            var colorTextureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(colorTexture.GetFullTextureView(gd));
+
+            var colorAttachment = new RenderPassColorAttachment
+            {
+                View = colorTextureView.View,
+                LoadOp = LoadOp.Clear,
+                StoreOp = StoreOp.Store,
+                ClearValue = new Color(clearColor.R, clearColor.G, clearColor.B, clearColor.A),
+            };
+
+            var renderPassDescriptor = new RenderPassDescriptor
+            {
+                ColorAttachmentCount = 1,
+                ColorAttachments = &colorAttachment,
+            };
+
+            renderPass = gd.WebGPU.CommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
+
+            gd.WebGPU.RenderPassEncoderEnd(renderPass);
+            gd.WebGPU.RenderPassEncoderRelease(renderPass);
         }
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)

@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using Silk.NET.WebGPU;
-using Silk.NET.WebGPU.Extensions.Dawn;
 
 namespace Veldrid.WGPU
 {
@@ -16,7 +15,6 @@ namespace Veldrid.WGPU
         private readonly WGPUSwapchainFramebuffer framebuffer;
         private readonly TextureFormat colorFormat;
 
-        private SwapChain* swapchain;
         private bool isDisposed;
 
         public WGPUSwapchain(WGPUGraphicsDevice gd, ref SwapchainDescription description)
@@ -33,34 +31,29 @@ namespace Veldrid.WGPU
 
         public override void Resize(uint width, uint height)
         {
-            if (swapchain != null)
-                gd.Dawn.SwapChainRelease(swapchain);
-
-            swapchain = gd.Dawn.DeviceCreateSwapChain(gd.NativeDevice, gd.NativeSurface, new SwapChainDescriptor
+            gd.WebGPU.SurfaceConfigure(gd.NativeSurface, new SurfaceConfiguration
             {
+                Device = gd.NativeDevice,
                 Width = width,
                 Height = height,
                 Format = colorFormat,
                 Usage = Silk.NET.WebGPU.TextureUsage.RenderAttachment,
-                PresentMode = PresentMode.Mailbox
+                PresentMode = PresentMode.Fifo
             });
 
-            framebuffer.SetSwapChain(swapchain, width, height);
+            framebuffer.Resize(width, height);
         }
 
         public void Present()
         {
             framebuffer.ReleaseView();
-            gd.Dawn.SwapChainPresent(swapchain);
+            gd.WebGPU.SurfacePresent(gd.NativeSurface);
         }
 
         public override void Dispose()
         {
             if (isDisposed)
                 return;
-
-            if (swapchain != null)
-                gd.Dawn.SwapChainRelease(swapchain);
 
             Framebuffer?.Dispose();
 

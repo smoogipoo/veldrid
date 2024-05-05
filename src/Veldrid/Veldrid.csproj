@@ -19,9 +19,11 @@
   <ItemGroup>
     <PackageReference Include="NativeLibraryLoader" Version="$(NativeLibraryLoaderVersion)"/>
     <PackageReference Include="ppy.Vk" Version="1.0.26" Condition="'$(ExcludeVulkan)' != 'true'"/>
-    <PackageReference Include="Silk.NET.WebGPU" Version="2.21.0" />
-    <PackageReference Include="Silk.NET.WebGPU.Extensions.Dawn" Version="2.21.0" />
-    <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.21.0" />
+
+    <!-- 2.21.0 is broken -->
+    <PackageReference Include="Silk.NET.WebGPU" Version="2.20.0"/>
+    <PackageReference Include="Silk.NET.WebGPU.Native.WGPU" Version="2.20.0"/>
+
     <PackageReference Include="Vortice.D3DCompiler" Version="$(VorticeWindowsVersion)"/>
     <PackageReference Include="Vortice.Direct3D11" Version="$(VorticeWindowsVersion)"/>
   </ItemGroup>
