@@ -2,6 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Silk.NET.WebGPU;
@@ -37,6 +39,9 @@ namespace Veldrid.WGPU
         private readonly SupportedLimits deviceLimits;
 
         private readonly Queue* commandQueue;
+
+        private readonly object resetEventsLock = new object();
+        private readonly List<ManualResetEvent[]> resetEvents = new List<ManualResetEvent[]>();
 
         public WGPUGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDesc)
         {
@@ -218,17 +223,39 @@ namespace Veldrid.WGPU
 
         public override bool WaitForFence(Fence fence, ulong nanosecondTimeout)
         {
-            throw new NotImplementedException();
+            return Util.AssertSubtype<Fence, WGPUFence>(fence).Wait(nanosecondTimeout);
         }
 
         public override bool WaitForFences(Fence[] fences, bool waitAll, ulong nanosecondTimeout)
         {
-            throw new NotImplementedException();
+            int msTimeout;
+            if (nanosecondTimeout == ulong.MaxValue)
+                msTimeout = -1;
+            else
+                msTimeout = (int)Math.Min(nanosecondTimeout / 1_000_000, int.MaxValue);
+
+            var events = getResetEventArray(fences.Length);
+            for (int i = 0; i < fences.Length; i++)
+                events[i] = Util.AssertSubtype<Fence, WGPUFence>(fences[i]).ResetEvent;
+
+            bool result;
+
+            if (waitAll)
+                result = WaitHandle.WaitAll(events.Cast<WaitHandle>().ToArray(), msTimeout);
+            else
+            {
+                int index = WaitHandle.WaitAny(events.Cast<WaitHandle>().ToArray(), msTimeout);
+                result = index != WaitHandle.WaitTimeout;
+            }
+
+            returnResetEventArray(events);
+
+            return result;
         }
 
         public override void ResetFence(Fence fence)
         {
-            throw new NotImplementedException();
+            Util.AssertSubtype<Fence, WGPUFence>(fence).Reset();
         }
 
         public override TextureSampleCount GetSampleCountLimit(PixelFormat format, bool depthFormat)
@@ -290,6 +317,31 @@ namespace Veldrid.WGPU
         private protected override bool GetPixelFormatSupportCore(PixelFormat format, TextureType type, TextureUsage usage, out PixelFormatProperties properties)
         {
             throw new NotImplementedException();
+        }
+
+        private ManualResetEvent[] getResetEventArray(int length)
+        {
+            lock (resetEventsLock)
+            {
+                for (int i = resetEvents.Count - 1; i > 0; i--)
+                {
+                    var array = resetEvents[i];
+
+                    if (array.Length == length)
+                    {
+                        resetEvents.RemoveAt(i);
+                        return array;
+                    }
+                }
+            }
+
+            var newArray = new ManualResetEvent[length];
+            return newArray;
+        }
+
+        private void returnResetEventArray(ManualResetEvent[] array)
+        {
+            lock (resetEventsLock) resetEvents.Add(array);
         }
 
         protected override void PlatformDispose()
