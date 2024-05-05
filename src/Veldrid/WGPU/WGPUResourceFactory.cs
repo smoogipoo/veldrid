@@ -18,9 +18,7 @@ namespace Veldrid.WGPU
         }
 
         public override Pipeline CreateComputePipeline(ref ComputePipelineDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUPipeline(gd, ref description);
 
         public override Framebuffer CreateFramebuffer(ref FramebufferDescription description)
             => new WGPUFramebuffer(gd, ref description);
@@ -29,14 +27,10 @@ namespace Veldrid.WGPU
             => new WGPUCommandList(gd, ref description);
 
         public override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUResourceLayout(gd, ref description);
 
         public override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUResourceSet(gd, ref description);
 
         public override Fence CreateFence(bool signaled)
         {
@@ -47,9 +41,7 @@ namespace Veldrid.WGPU
             => new WGPUSwapchain(gd, ref description);
 
         protected override Pipeline CreateGraphicsPipelineCore(ref GraphicsPipelineDescription description)
-        {
-            throw new NotImplementedException();
-        }
+            => new WGPUPipeline(gd, ref description);
 
         protected override Texture CreateTextureCore(ulong nativeTexture, ref TextureDescription description)
             => new WGPUTexture(gd, ref description, (Silk.NET.WebGPU.Texture*)nativeTexture);
