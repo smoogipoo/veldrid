@@ -19,6 +19,11 @@ namespace Veldrid.WGPU
 
         private RenderPassEncoder* renderPass;
 
+        private Color[] clearColourValues = Array.Empty<Color>();
+        private bool[] validClearColourValues = Array.Empty<bool>();
+        private float? clearDepthValue;
+        private byte? clearStencilValue;
+
         public WGPUCommandList(WGPUGraphicsDevice gd, ref CommandListDescription description)
             : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
         {
@@ -32,8 +37,12 @@ namespace Veldrid.WGPU
 
         public override void End()
         {
+            endRenderPass();
+
             commandBuffer = gd.WebGPU.CommandEncoderFinish(encoder, new CommandBufferDescriptor());
             gd.WebGPU.CommandEncoderRelease(encoder);
+
+            resetState();
         }
 
         public CommandBuffer* ConsumeCommandBuffer()
@@ -73,7 +82,12 @@ namespace Veldrid.WGPU
 
         protected override void SetFramebufferCore(Framebuffer fb)
         {
-            throw new NotImplementedException();
+            endRenderPass();
+
+            Util.EnsureArrayMinimumSize(ref clearColourValues, (uint)fb.ColorTargets.Count);
+            Util.EnsureArrayMinimumSize(ref validClearColourValues, (uint)fb.ColorTargets.Count);
+
+            beginRenderPass();
         }
 
         protected override void DrawIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
@@ -125,31 +139,26 @@ namespace Veldrid.WGPU
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            var colorTexture = Util.AssertSubtype<Texture, WGPUTexture>(gd.SwapchainFramebuffer.ColorTargets[0].Target);
-            var colorTextureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(colorTexture.GetFullTextureView(gd));
+            clearColourValues[index] = new Color(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
+            validClearColourValues[index] = true;
 
-            var colorAttachment = new RenderPassColorAttachment
+            if (renderPass != null)
             {
-                View = colorTextureView.View,
-                LoadOp = LoadOp.Clear,
-                StoreOp = StoreOp.Store,
-                ClearValue = new Color(clearColor.R, clearColor.G, clearColor.B, clearColor.A),
-            };
-
-            var renderPassDescriptor = new RenderPassDescriptor
-            {
-                ColorAttachmentCount = 1,
-                ColorAttachments = &colorAttachment,
-            };
-
-            renderPass = gd.WebGPU.CommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
-
-            gd.WebGPU.RenderPassEncoderEnd(renderPass);
-            gd.WebGPU.RenderPassEncoderRelease(renderPass);
+                endRenderPass();
+                beginRenderPass();
+            }
         }
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
+            clearDepthValue = depth;
+            clearStencilValue = stencil;
+
+            if (renderPass != null)
+            {
+                endRenderPass();
+                beginRenderPass();
+            }
         }
 
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
@@ -185,6 +194,81 @@ namespace Veldrid.WGPU
         private protected override void InsertDebugMarkerCore(string name)
         {
             throw new NotImplementedException();
+        }
+
+        private void beginRenderPass()
+        {
+            if (renderPass != null)
+                return;
+
+            Span<RenderPassColorAttachment> colourAttachments = stackalloc RenderPassColorAttachment[Framebuffer.ColorTargets.Count];
+
+            for (int i = 0; i < Framebuffer.ColorTargets.Count; i++)
+            {
+                var texture = Util.AssertSubtype<Texture, WGPUTexture>(Framebuffer.ColorTargets[i].Target);
+                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+
+                colourAttachments[i] = new RenderPassColorAttachment
+                {
+                    View = textureView.View,
+                    LoadOp = validClearColourValues[i] ? LoadOp.Clear : LoadOp.Load,
+                    StoreOp = StoreOp.Store,
+                    ClearValue = new Color(clearColourValues[i].R, clearColourValues[i].G, clearColourValues[i].B, clearColourValues[i].A),
+                };
+            }
+
+            RenderPassDepthStencilAttachment depthStencilAttachment = default;
+
+            if (Framebuffer.DepthTarget is FramebufferAttachment depthTarget)
+            {
+                var texture = Util.AssertSubtype<Texture, WGPUTexture>(depthTarget.Target);
+                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+
+                depthStencilAttachment = new RenderPassDepthStencilAttachment
+                {
+                    View = textureView.View,
+                    DepthLoadOp = clearDepthValue == null ? LoadOp.Load : LoadOp.Clear,
+                    DepthStoreOp = StoreOp.Store,
+                    DepthClearValue = clearDepthValue ?? 0,
+                    StencilLoadOp = clearStencilValue == null ? LoadOp.Load : LoadOp.Clear,
+                    StencilStoreOp = StoreOp.Store,
+                    StencilClearValue = clearStencilValue ?? 0
+                };
+            }
+
+            fixed (RenderPassColorAttachment* colourAttachmentPtr = &colourAttachments[0])
+            {
+                var renderPassDescriptor = new RenderPassDescriptor
+                {
+                    ColorAttachmentCount = (uint)colourAttachments.Length,
+                    ColorAttachments = colourAttachmentPtr
+                };
+
+                if (Framebuffer.DepthTarget != null)
+                    renderPassDescriptor.DepthStencilAttachment = &depthStencilAttachment;
+
+                renderPass = gd.WebGPU.CommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
+            }
+
+            Util.ClearArray(validClearColourValues);
+            clearDepthValue = null;
+            clearStencilValue = null;
+        }
+
+        private void endRenderPass()
+        {
+            if (renderPass == null)
+                return;
+
+            gd.WebGPU.RenderPassEncoderEnd(renderPass);
+            gd.WebGPU.RenderPassEncoderRelease(renderPass);
+
+            renderPass = null;
+        }
+
+        private void resetState()
+        {
+            Framebuffer = null;
         }
 
         public override void Dispose()

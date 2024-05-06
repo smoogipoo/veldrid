@@ -12,7 +12,6 @@ namespace Veldrid.WGPU
 
         private readonly WGPUGraphicsDevice gd;
 
-        private Silk.NET.WebGPU.Texture* texture;
         private Silk.NET.WebGPU.TextureView* view;
 
         private bool isDisposed;
@@ -47,11 +46,7 @@ namespace Veldrid.WGPU
             if (view != null)
                 gd.WebGPU.TextureViewRelease(view);
 
-            if (texture != null)
-                gd.WebGPU.TextureRelease(texture);
-
             view = null;
-            texture = null;
         }
 
         public override void Dispose()

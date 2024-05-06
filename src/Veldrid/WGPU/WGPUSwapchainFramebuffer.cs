@@ -38,50 +38,23 @@ namespace Veldrid.WGPU
 
             Util.EnsureArrayMinimumSize(ref colorTargets, 1);
 
-            TextureDescription colorDescription = new TextureDescription
-            {
-                Width = width,
-                Height = height,
-                Depth = 1,
-                MipLevels = 1,
-                ArrayLayers = 1,
-                Format = WGPUFormats.WGPUToVdPixelFormat(colorFormat),
-                Usage = TextureUsage.RenderTarget,
-                Type = TextureType.Texture2D,
-                SampleCount = TextureSampleCount.Count1
-            };
-
+            TextureDescription colorDescription = TextureDescription.Texture2D(width, height, 1, 1, WGPUFormats.WGPUToVdPixelFormat(colorFormat), TextureUsage.RenderTarget);
             colorTargets![0] = new FramebufferAttachment(new WGPUSwapchainTexture(gd, ref colorDescription), 0);
 
             if (depthFormat is PixelFormat depth)
             {
-                TextureDescription depthDescription = new TextureDescription
-                {
-                    Width = width,
-                    Height = height,
-                    Depth = 1,
-                    MipLevels = 1,
-                    ArrayLayers = 1,
-                    Format = depth,
-                    Usage = TextureUsage.DepthStencil,
-                    Type = TextureType.Texture2D,
-                    SampleCount = TextureSampleCount.Count1
-                };
-
-                depthTarget = new FramebufferAttachment(new WGPUSwapchainTexture(gd, ref depthDescription), 0);
+                TextureDescription depthDescription = TextureDescription.Texture2D(width, height, 1, 1, depth, TextureUsage.RenderTarget | TextureUsage.DepthStencil);
+                depthTarget = new FramebufferAttachment(new WGPUTexture(gd, ref depthDescription), 0);
             }
         }
 
         public void ReleaseView()
         {
+            if (colorTargets == null)
+                return;
+
             var wgpuColorTarget = Util.AssertSubtype<Texture, WGPUSwapchainTexture>(colorTargets[0].Target);
             wgpuColorTarget.ReleaseView();
-
-            if (depthTarget is FramebufferAttachment depth)
-            {
-                var wgpuDepthTarget = Util.AssertSubtype<Texture, WGPUSwapchainTexture>(depth.Target);
-                wgpuDepthTarget.ReleaseView();
-            }
         }
 
         public override void Dispose()
