@@ -247,6 +247,7 @@ namespace Veldrid.WGPU
 
         private void onUncapturedError(ErrorType type, byte* message, void* userData)
         {
+            Console.WriteLine($"[{type}] WebGPU: {Marshal.PtrToStringUTF8((IntPtr)message)}");
         }
 
         public override GraphicsBackend BackendType => GraphicsBackend.WebGPU;
