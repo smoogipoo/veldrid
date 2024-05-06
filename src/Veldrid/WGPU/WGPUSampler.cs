@@ -1,6 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using Silk.NET.WebGPU;
 
 namespace Veldrid.WGPU
@@ -37,7 +38,7 @@ namespace Veldrid.WGPU
                 Compare = description.ComparisonKind != null
                     ? WGPUFormats.VdToWGPUCompareFunction(description.ComparisonKind.Value)
                     : CompareFunction.Never,
-                MaxAnisotropy = (ushort)description.MaximumAnisotropy
+                MaxAnisotropy = (ushort)Math.Max(1, description.MaximumAnisotropy)
             });
         }
 
