@@ -29,7 +29,7 @@ namespace Veldrid.WGPU
                     {
                         Chain = { SType = SType.ShaderModuleSpirvDescriptor },
                         Code = (uint*)codePtr,
-                        CodeSize = (uint)description.ShaderBytes.Length,
+                        CodeSize = (uint)description.ShaderBytes.Length / sizeof(uint),
                     }),
                 });
             }
