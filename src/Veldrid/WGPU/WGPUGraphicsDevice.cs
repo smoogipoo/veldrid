@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using Silk.NET.WebGPU;
 using Veldrid.MetalBindings;
-using Veldrid.MTL;
 
 namespace Veldrid.WGPU
 {
@@ -98,73 +97,114 @@ namespace Veldrid.WGPU
 
         private Surface* createSurface(SwapchainDescription swapchainDesc)
         {
-            CAMetalLayer metalLayer;
-            uint width;
-            uint height;
+            if (swapchainDesc.Source is UwpSwapchainSource)
+                throw new NotImplementedException();
+
+            if (swapchainDesc.Source is Win32SwapchainSource win32Source)
+            {
+                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                {
+                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromWindowsHWND
+                    {
+                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromWindowsHwnd },
+                        Hinstance = (void*)win32Source.Hinstance,
+                        Hwnd = (void*)win32Source.Hwnd
+                    })
+                });
+            }
+
+            if (swapchainDesc.Source is XlibSwapchainSource xlibSource)
+            {
+                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                {
+                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromXlibWindow
+                    {
+                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromXlibWindow },
+                        Display = (void*)xlibSource.Display,
+                        Window = (uint)xlibSource.Window
+                    })
+                });
+            }
+
+            if (swapchainDesc.Source is WaylandSwapchainSource waylandSource)
+            {
+                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                {
+                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromWaylandSurface
+                    {
+                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromWaylandSurface },
+                        Display = (void*)waylandSource.Display,
+                        Surface = (void*)waylandSource.Surface
+                    })
+                });
+            }
 
             if (swapchainDesc.Source is NSWindowSwapchainSource nsWindowSource)
             {
                 var nswindow = new NSWindow(nsWindowSource.NSWindow);
                 var contentView = nswindow.contentView;
-                var windowContentSize = contentView.frame.size;
-                width = (uint)windowContentSize.width;
-                height = (uint)windowContentSize.height;
 
-                if (!CAMetalLayer.TryCast(contentView.layer, out metalLayer))
+                if (!CAMetalLayer.TryCast(contentView.layer, out CAMetalLayer metalLayer))
                 {
                     metalLayer = CAMetalLayer.New();
                     contentView.wantsLayer = true;
                     contentView.layer = metalLayer.NativePtr;
                 }
+
+                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                {
+                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                    {
+                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
+                        Layer = (void*)metalLayer.NativePtr,
+                    })
+                });
             }
-            else if (swapchainDesc.Source is NSViewSwapchainSource nsViewSource)
+
+            if (swapchainDesc.Source is NSViewSwapchainSource nsViewSource)
             {
                 var contentView = new NSView(nsViewSource.NSView);
-                var windowContentSize = contentView.frame.size;
-                width = (uint)windowContentSize.width;
-                height = (uint)windowContentSize.height;
 
-                if (!CAMetalLayer.TryCast(contentView.layer, out metalLayer))
+                if (!CAMetalLayer.TryCast(contentView.layer, out CAMetalLayer metalLayer))
                 {
                     metalLayer = CAMetalLayer.New();
                     contentView.wantsLayer = true;
                     contentView.layer = metalLayer.NativePtr;
                 }
+
+                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                {
+                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                    {
+                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
+                        Layer = (void*)metalLayer.NativePtr,
+                    })
+                });
             }
-            else if (swapchainDesc.Source is UIViewSwapchainSource uiViewSource)
+
+            if (swapchainDesc.Source is UIViewSwapchainSource uiViewSource)
             {
                 var uiView = new UIView(uiViewSource.UIView);
-                var viewSize = uiView.frame.size;
-                width = (uint)viewSize.width;
-                height = (uint)viewSize.height;
 
-                if (!CAMetalLayer.TryCast(uiView.layer, out metalLayer))
+                if (!CAMetalLayer.TryCast(uiView.layer, out CAMetalLayer metalLayer))
                 {
                     metalLayer = CAMetalLayer.New();
                     metalLayer.frame = uiView.frame;
                     metalLayer.opaque = true;
                     uiView.layer.addSublayer(metalLayer.NativePtr);
                 }
-            }
-            else
-                throw new VeldridException("A Metal Swapchain can only be created from an NSWindow, NSView, or UIView.");
 
-            var format = swapchainDesc.ColorSrgb
-                ? PixelFormat.B8G8R8A8UNormSRgb
-                : PixelFormat.B8G8R8A8UNorm;
-
-            metalLayer.pixelFormat = MtlFormats.VdToMtlPixelFormat(format, false);
-            metalLayer.framebufferOnly = true;
-            metalLayer.drawableSize = new CGSize(width, height);
-
-            return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
-            {
-                NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
                 {
-                    Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
-                    Layer = (void*)metalLayer.NativePtr,
-                })
-            });
+                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                    {
+                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
+                        Layer = (void*)metalLayer.NativePtr,
+                    })
+                });
+            }
+
+            throw new VeldridException($"Unsupported swap chain source: {swapchainDesc.Source.GetType()}.");
         }
 
         private Adapter* requestAdapter(RequestAdapterOptions options)
