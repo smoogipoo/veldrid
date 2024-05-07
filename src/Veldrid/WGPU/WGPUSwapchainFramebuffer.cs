@@ -15,12 +15,15 @@ namespace Veldrid.WGPU
 
         public override FramebufferAttachment? DepthTarget => depthTarget;
 
+        public override OutputDescription OutputDescription => outputDescription;
+
         private readonly WGPUGraphicsDevice gd;
         private readonly TextureFormat colorFormat;
         private readonly PixelFormat? depthFormat;
 
         private FramebufferAttachment[] colorTargets;
         private FramebufferAttachment? depthTarget;
+        private OutputDescription outputDescription;
 
         private bool isDisposed;
 
@@ -46,6 +49,8 @@ namespace Veldrid.WGPU
                 TextureDescription depthDescription = TextureDescription.Texture2D(width, height, 1, 1, depth, TextureUsage.RenderTarget | TextureUsage.DepthStencil);
                 depthTarget = new FramebufferAttachment(new WGPUTexture(gd, ref depthDescription), 0);
             }
+
+            outputDescription = OutputDescription.CreateFromFramebuffer(this);
         }
 
         public void ReleaseView()

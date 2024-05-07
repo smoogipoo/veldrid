@@ -335,12 +335,12 @@ namespace Veldrid.WGPU
 
         private protected override void UpdateTextureCore(Texture texture, IntPtr source, uint sizeInBytes, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
-            throw new NotImplementedException();
+            WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+            WebGPU.QueueWriteBuffer(commandQueue, wgpuBuffer.Buffer, bufferOffsetInBytes, (void*)source, sizeInBytes);
         }
 
         private protected override bool GetPixelFormatSupportCore(PixelFormat format, TextureType type, TextureUsage usage, out PixelFormatProperties properties)

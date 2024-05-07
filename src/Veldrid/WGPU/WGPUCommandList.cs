@@ -57,12 +57,14 @@ namespace Veldrid.WGPU
 
         public override void SetViewport(uint index, ref Viewport viewport)
         {
-            throw new NotImplementedException();
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderSetViewport(renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
         }
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
         {
-            throw new NotImplementedException();
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderSetScissorRect(renderPass, x, y, width, height);
         }
 
         public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
@@ -72,12 +74,10 @@ namespace Veldrid.WGPU
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
-            throw new NotImplementedException();
         }
 
         protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
-            throw new NotImplementedException();
         }
 
         protected override void SetFramebufferCore(Framebuffer fb)
@@ -92,12 +92,18 @@ namespace Veldrid.WGPU
 
         protected override void DrawIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
         {
-            throw new NotImplementedException();
+            WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
+
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderDrawIndirect(renderPass, wgpuBuffer.Buffer, offset);
         }
 
         protected override void DrawIndexedIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
         {
-            throw new NotImplementedException();
+            WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
+
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderDrawIndexedIndirect(renderPass, wgpuBuffer.Buffer, offset);
         }
 
         protected override void DispatchIndirectCore(DeviceBuffer indirectBuffer, uint offset)
@@ -112,29 +118,36 @@ namespace Veldrid.WGPU
 
         protected override void CopyBufferCore(DeviceBuffer source, uint sourceOffset, DeviceBuffer destination, uint destinationOffset, uint sizeInBytes)
         {
-            throw new NotImplementedException();
         }
 
         protected override void CopyTextureCore(Texture source, uint srcX, uint srcY, uint srcZ, uint srcMipLevel, uint srcBaseArrayLayer, Texture destination, uint dstX, uint dstY, uint dstZ,
                                                 uint dstMipLevel,
                                                 uint dstBaseArrayLayer, uint width, uint height, uint depth, uint layerCount)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void SetPipelineCore(Pipeline pipeline)
         {
-            throw new NotImplementedException();
+            var wgpuPipeline = Util.AssertSubtype<Pipeline, WGPUPipeline>(pipeline);
+
+            if (!wgpuPipeline.IsComputePipeline)
+            {
+                // Todo: End compute pass.
+                beginRenderPass();
+                gd.WebGPU.RenderPassEncoderSetPipeline(renderPass, wgpuPipeline.RenderPipeline);
+            }
+            else
+            {
+                // Todo: Compute pipeline.
+            }
         }
 
         private protected override void SetVertexBufferCore(uint index, DeviceBuffer buffer, uint offset)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
@@ -163,37 +176,35 @@ namespace Veldrid.WGPU
 
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
         {
-            throw new NotImplementedException();
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderDraw(renderPass, vertexCount, instanceCount, vertexStart, instanceStart);
         }
 
         private protected override void DrawIndexedCore(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
         {
-            throw new NotImplementedException();
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderDrawIndexed(renderPass, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
         }
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
-            throw new NotImplementedException();
+            gd.UpdateBuffer(buffer, bufferOffsetInBytes, source, sizeInBytes);
         }
 
         private protected override void GenerateMipmapsCore(Texture texture)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void PushDebugGroupCore(string name)
         {
-            throw new NotImplementedException();
         }
 
         private protected override void PopDebugGroupCore()
         {
-            throw new NotImplementedException();
         }
 
         private protected override void InsertDebugMarkerCore(string name)
         {
-            throw new NotImplementedException();
         }
 
         private void beginRenderPass()
@@ -201,7 +212,7 @@ namespace Veldrid.WGPU
             if (renderPass != null)
                 return;
 
-            Span<RenderPassColorAttachment> colourAttachments = stackalloc RenderPassColorAttachment[Framebuffer.ColorTargets.Count];
+            RenderPassColorAttachment* colourAttachments = stackalloc RenderPassColorAttachment[Framebuffer.ColorTargets.Count];
 
             for (int i = 0; i < Framebuffer.ColorTargets.Count; i++)
             {
@@ -217,38 +228,35 @@ namespace Veldrid.WGPU
                 };
             }
 
-            RenderPassDepthStencilAttachment depthStencilAttachment = default;
+            // RenderPassDepthStencilAttachment depthStencilAttachment = default;
+            //
+            // if (Framebuffer.DepthTarget is FramebufferAttachment depthTarget)
+            // {
+            //     var texture = Util.AssertSubtype<Texture, WGPUTexture>(depthTarget.Target);
+            //     var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+            //
+            //     depthStencilAttachment = new RenderPassDepthStencilAttachment
+            //     {
+            //         View = textureView.View,
+            //         DepthLoadOp = clearDepthValue == null ? LoadOp.Load : LoadOp.Clear,
+            //         DepthStoreOp = StoreOp.Store,
+            //         DepthClearValue = clearDepthValue ?? 0,
+            //         StencilLoadOp = clearStencilValue == null ? LoadOp.Load : LoadOp.Clear,
+            //         StencilStoreOp = StoreOp.Store,
+            //         StencilClearValue = clearStencilValue ?? 0
+            //     };
+            // }
 
-            if (Framebuffer.DepthTarget is FramebufferAttachment depthTarget)
+            var renderPassDescriptor = new RenderPassDescriptor
             {
-                var texture = Util.AssertSubtype<Texture, WGPUTexture>(depthTarget.Target);
-                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+                ColorAttachmentCount = (uint)Framebuffer.ColorTargets.Count,
+                ColorAttachments = colourAttachments
+            };
 
-                depthStencilAttachment = new RenderPassDepthStencilAttachment
-                {
-                    View = textureView.View,
-                    DepthLoadOp = clearDepthValue == null ? LoadOp.Load : LoadOp.Clear,
-                    DepthStoreOp = StoreOp.Store,
-                    DepthClearValue = clearDepthValue ?? 0,
-                    StencilLoadOp = clearStencilValue == null ? LoadOp.Load : LoadOp.Clear,
-                    StencilStoreOp = StoreOp.Store,
-                    StencilClearValue = clearStencilValue ?? 0
-                };
-            }
+            // if (Framebuffer.DepthTarget != null)
+            //     renderPassDescriptor.DepthStencilAttachment = &depthStencilAttachment;
 
-            fixed (RenderPassColorAttachment* colourAttachmentPtr = &colourAttachments[0])
-            {
-                var renderPassDescriptor = new RenderPassDescriptor
-                {
-                    ColorAttachmentCount = (uint)colourAttachments.Length,
-                    ColorAttachments = colourAttachmentPtr
-                };
-
-                if (Framebuffer.DepthTarget != null)
-                    renderPassDescriptor.DepthStencilAttachment = &depthStencilAttachment;
-
-                renderPass = gd.WebGPU.CommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
-            }
+            renderPass = gd.WebGPU.CommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
 
             Util.ClearArray(validClearColourValues);
             clearDepthValue = null;
