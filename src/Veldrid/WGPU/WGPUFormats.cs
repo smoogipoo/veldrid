@@ -1,6 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
 using Silk.NET.WebGPU;
 
 namespace Veldrid.WGPU
@@ -564,6 +566,303 @@ namespace Veldrid.WGPU
                 wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapWrite;
 
             return wgpuUsage;
+        }
+
+        public static Silk.NET.WebGPU.PrimitiveTopology VdToWGPUPrimitiveTopology(PrimitiveTopology topology)
+        {
+            switch (topology)
+            {
+                case PrimitiveTopology.TriangleList:
+                    return Silk.NET.WebGPU.PrimitiveTopology.TriangleList;
+
+                case PrimitiveTopology.TriangleStrip:
+                    return Silk.NET.WebGPU.PrimitiveTopology.TriangleStrip;
+
+                case PrimitiveTopology.LineList:
+                    return Silk.NET.WebGPU.PrimitiveTopology.LineList;
+
+                case PrimitiveTopology.LineStrip:
+                    return Silk.NET.WebGPU.PrimitiveTopology.LineStrip;
+
+                case PrimitiveTopology.PointList:
+                    return Silk.NET.WebGPU.PrimitiveTopology.PointList;
+
+                default:
+                    throw Illegal.Value<PrimitiveTopology>();
+            }
+        }
+
+        public static Silk.NET.WebGPU.FrontFace VdToWGPUFrontFace(FrontFace frontFace)
+        {
+            switch (frontFace)
+            {
+                case FrontFace.Clockwise:
+                    return Silk.NET.WebGPU.FrontFace.CW;
+
+                case FrontFace.CounterClockwise:
+                    return Silk.NET.WebGPU.FrontFace.Ccw;
+
+                default:
+                    throw Illegal.Value<FrontFace>();
+            }
+        }
+
+        public static CullMode VdToWGPUCullMode(FaceCullMode cullMode)
+        {
+            switch (cullMode)
+            {
+                case FaceCullMode.None:
+                    return CullMode.None;
+
+                case FaceCullMode.Front:
+                    return CullMode.Front;
+
+                case FaceCullMode.Back:
+                    return CullMode.Back;
+
+                default:
+                    throw Illegal.Value<FaceCullMode>();
+            }
+        }
+
+        public static BlendOperation VdToWGPUBlendOperation(BlendFunction function)
+        {
+            switch (function)
+            {
+                case BlendFunction.Add:
+                    return BlendOperation.Add;
+
+                case BlendFunction.Subtract:
+                    return BlendOperation.Subtract;
+
+                case BlendFunction.ReverseSubtract:
+                    return BlendOperation.ReverseSubtract;
+
+                case BlendFunction.Minimum:
+                    return BlendOperation.Min;
+
+                case BlendFunction.Maximum:
+                    return BlendOperation.Max;
+
+                default:
+                    throw Illegal.Value<BlendFunction>();
+            }
+        }
+
+        public static Silk.NET.WebGPU.BlendFactor VdToWGPUBlendFactor(BlendFactor factor)
+        {
+            switch (factor)
+            {
+                case BlendFactor.Zero:
+                    return Silk.NET.WebGPU.BlendFactor.Zero;
+
+                case BlendFactor.One:
+                    return Silk.NET.WebGPU.BlendFactor.One;
+
+                case BlendFactor.SourceAlpha:
+                    return Silk.NET.WebGPU.BlendFactor.SrcAlpha;
+
+                case BlendFactor.InverseSourceAlpha:
+                    return Silk.NET.WebGPU.BlendFactor.OneMinusSrcAlpha;
+
+                case BlendFactor.DestinationAlpha:
+                    return Silk.NET.WebGPU.BlendFactor.DstAlpha;
+
+                case BlendFactor.InverseDestinationAlpha:
+                    return Silk.NET.WebGPU.BlendFactor.OneMinusDstAlpha;
+
+                case BlendFactor.SourceColor:
+                    return Silk.NET.WebGPU.BlendFactor.Src;
+
+                case BlendFactor.InverseSourceColor:
+                    return Silk.NET.WebGPU.BlendFactor.OneMinusSrc;
+
+                case BlendFactor.DestinationColor:
+                    return Silk.NET.WebGPU.BlendFactor.Dst;
+
+                case BlendFactor.InverseDestinationColor:
+                    return Silk.NET.WebGPU.BlendFactor.OneMinusDst;
+
+                case BlendFactor.BlendFactor:
+                    return Silk.NET.WebGPU.BlendFactor.Constant;
+
+                case BlendFactor.InverseBlendFactor:
+                    return Silk.NET.WebGPU.BlendFactor.OneMinusConstant;
+
+                default:
+                    throw Illegal.Value<BlendFactor>();
+            }
+        }
+
+        public static Silk.NET.WebGPU.ColorWriteMask VdToWGPUColorWriteMask(ColorWriteMask mask)
+        {
+            var flags = Silk.NET.WebGPU.ColorWriteMask.None;
+
+            if ((mask & ColorWriteMask.Red) == ColorWriteMask.Red)
+                flags |= Silk.NET.WebGPU.ColorWriteMask.Red;
+
+            if ((mask & ColorWriteMask.Green) == ColorWriteMask.Green)
+                flags |= Silk.NET.WebGPU.ColorWriteMask.Green;
+
+            if ((mask & ColorWriteMask.Blue) == ColorWriteMask.Blue)
+                flags |= Silk.NET.WebGPU.ColorWriteMask.Blue;
+
+            if ((mask & ColorWriteMask.Alpha) == ColorWriteMask.Alpha)
+                flags |= Silk.NET.WebGPU.ColorWriteMask.Alpha;
+
+            return flags;
+        }
+
+        public static Silk.NET.WebGPU.StencilOperation VdToWGPUStencilOperation(StencilOperation operation)
+        {
+            switch (operation)
+            {
+                case StencilOperation.Keep:
+                    return Silk.NET.WebGPU.StencilOperation.Keep;
+
+                case StencilOperation.Zero:
+                    return Silk.NET.WebGPU.StencilOperation.Zero;
+
+                case StencilOperation.Replace:
+                    return Silk.NET.WebGPU.StencilOperation.Replace;
+
+                case StencilOperation.IncrementAndClamp:
+                    return Silk.NET.WebGPU.StencilOperation.IncrementClamp;
+
+                case StencilOperation.DecrementAndClamp:
+                    return Silk.NET.WebGPU.StencilOperation.DecrementClamp;
+
+                case StencilOperation.Invert:
+                    return Silk.NET.WebGPU.StencilOperation.Invert;
+
+                case StencilOperation.IncrementAndWrap:
+                    return Silk.NET.WebGPU.StencilOperation.IncrementWrap;
+
+                case StencilOperation.DecrementAndWrap:
+                    return Silk.NET.WebGPU.StencilOperation.DecrementWrap;
+
+                default:
+                    throw Illegal.Value<StencilOperation>();
+            }
+        }
+
+        public static VertexFormat VdToWGPUVertexFormat(VertexElementFormat format)
+        {
+            switch (format)
+            {
+                case VertexElementFormat.Float1:
+                    return VertexFormat.Float32;
+
+                case VertexElementFormat.Float2:
+                    return VertexFormat.Float32x2;
+
+                case VertexElementFormat.Float3:
+                    return VertexFormat.Float32x3;
+
+                case VertexElementFormat.Float4:
+                    return VertexFormat.Float32x4;
+
+                case VertexElementFormat.Byte2Norm:
+                    return VertexFormat.Unorm8x2;
+
+                case VertexElementFormat.Byte2:
+                    return VertexFormat.Uint8x2;
+
+                case VertexElementFormat.Byte4Norm:
+                    return VertexFormat.Unorm8x4;
+
+                case VertexElementFormat.Byte4:
+                    return VertexFormat.Uint8x4;
+
+                case VertexElementFormat.SByte2Norm:
+                    return VertexFormat.Snorm8x2;
+
+                case VertexElementFormat.SByte2:
+                    return VertexFormat.Sint8x2;
+
+                case VertexElementFormat.SByte4Norm:
+                    return VertexFormat.Snorm8x4;
+
+                case VertexElementFormat.SByte4:
+                    return VertexFormat.Sint8x4;
+
+                case VertexElementFormat.UShort2Norm:
+                    return VertexFormat.Unorm16x2;
+
+                case VertexElementFormat.UShort2:
+                    return VertexFormat.Uint16x2;
+
+                case VertexElementFormat.UShort4Norm:
+                    return VertexFormat.Unorm16x4;
+
+                case VertexElementFormat.UShort4:
+                    return VertexFormat.Uint16x4;
+
+                case VertexElementFormat.Short2Norm:
+                    return VertexFormat.Snorm16x2;
+
+                case VertexElementFormat.Short2:
+                    return VertexFormat.Sint16x2;
+
+                case VertexElementFormat.Short4Norm:
+                    return VertexFormat.Snorm16x4;
+
+                case VertexElementFormat.Short4:
+                    return VertexFormat.Sint16x4;
+
+                case VertexElementFormat.UInt1:
+                    return VertexFormat.Uint32;
+
+                case VertexElementFormat.UInt2:
+                    return VertexFormat.Uint32x2;
+
+                case VertexElementFormat.UInt3:
+                    return VertexFormat.Uint32x3;
+
+                case VertexElementFormat.UInt4:
+                    return VertexFormat.Uint32x4;
+
+                case VertexElementFormat.Int1:
+                    return VertexFormat.Sint32;
+
+                case VertexElementFormat.Int2:
+                    return VertexFormat.Sint32x2;
+
+                case VertexElementFormat.Int3:
+                    return VertexFormat.Sint32x3;
+
+                case VertexElementFormat.Int4:
+                    return VertexFormat.Sint32x4;
+
+                case VertexElementFormat.Half1:
+                    throw Illegal.Value<VertexElementFormat>();
+
+                case VertexElementFormat.Half2:
+                    return VertexFormat.Float16x2;
+
+                case VertexElementFormat.Half4:
+                    return VertexFormat.Float16x4;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format), format, null);
+            }
+        }
+
+        [SuppressMessage("ReSharper", "BitwiseOperatorOnEnumWithoutFlags")] // Silk.NET issue.
+        public static ShaderStage VdToWGPUShaderStage(ShaderStages stage)
+        {
+            var ret = ShaderStage.None;
+
+            if ((stage & ShaderStages.Vertex) == ShaderStages.Vertex)
+                ret |= ShaderStage.Vertex;
+
+            if ((stage & ShaderStages.Fragment) == ShaderStages.Fragment)
+                ret |= ShaderStage.Fragment;
+
+            if ((stage & ShaderStages.Compute) == ShaderStages.Compute)
+                ret |= ShaderStage.Compute;
+
+            return ret;
         }
     }
 }
