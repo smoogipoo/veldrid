@@ -63,8 +63,7 @@ namespace Veldrid.WGPU
                         entries[i].Texture = new TextureBindingLayout
                         {
                             SampleType = TextureSampleType.Float,
-                            ViewDimension = TextureViewDimension.Dimension2D,
-                            Multisampled = true
+                            ViewDimension = TextureViewDimension.Dimension2D
                         };
                         break;
 
