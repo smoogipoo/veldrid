@@ -90,8 +90,8 @@ namespace Veldrid.WGPU
                         DepthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.DepthFail),
                         PassOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Pass)
                     },
-                    StencilReadMask = depthState.StencilReadMask,
-                    StencilWriteMask = depthState.StencilWriteMask,
+                    StencilReadMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilReadMask : 0u,
+                    StencilWriteMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilWriteMask : 0u,
                 };
             }
 
