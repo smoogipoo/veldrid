@@ -864,5 +864,20 @@ namespace Veldrid.WGPU
 
             return ret;
         }
+
+        public static Silk.NET.WebGPU.IndexFormat VdToWGPUIndexFormat(IndexFormat format)
+        {
+            switch (format)
+            {
+                case IndexFormat.UInt16:
+                    return Silk.NET.WebGPU.IndexFormat.Uint16;
+
+                case IndexFormat.UInt32:
+                    return Silk.NET.WebGPU.IndexFormat.Uint32;
+
+                default:
+                    throw Illegal.Value<IndexFormat>();
+            }
+        }
     }
 }

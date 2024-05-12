@@ -74,6 +74,10 @@ namespace Veldrid.WGPU
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
+            WGPUResourceSet wgpuResourceSet = Util.AssertSubtype<ResourceSet, WGPUResourceSet>(rs);
+
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderSetBindGroup(renderPass, slot, wgpuResourceSet.BindGroup, dynamicOffsetsCount, dynamicOffsets);
         }
 
         protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
@@ -144,10 +148,18 @@ namespace Veldrid.WGPU
 
         private protected override void SetVertexBufferCore(uint index, DeviceBuffer buffer, uint offset)
         {
+            var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderSetVertexBuffer(renderPass, index, wgpuBuffer.Buffer, offset, buffer.SizeInBytes - offset);
         }
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
+            var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+
+            beginRenderPass();
+            gd.WebGPU.RenderPassEncoderSetIndexBuffer(renderPass, wgpuBuffer.Buffer, WGPUFormats.VdToWGPUIndexFormat(format), offset, buffer.SizeInBytes - offset);
         }
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)

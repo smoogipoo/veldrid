@@ -22,14 +22,13 @@ namespace Veldrid
 
         internal ResourceLayout(ref ResourceLayoutDescription description)
         {
-#if VALIDATE_USAGE
             Description = description;
 
             foreach (var element in description.Elements)
             {
-                if ((element.Options & ResourceLayoutElementOptions.DynamicBinding) != 0) DynamicBufferCount += 1;
+                if ((element.Options & ResourceLayoutElementOptions.DynamicBinding) != 0)
+                    DynamicBufferCount += 1;
             }
-#endif
         }
 
         #region Disposal
@@ -41,9 +40,7 @@ namespace Veldrid
 
         #endregion
 
-#if VALIDATE_USAGE
         internal readonly ResourceLayoutDescription Description;
         internal readonly uint DynamicBufferCount;
-#endif
     }
 }
