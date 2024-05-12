@@ -335,6 +335,30 @@ namespace Veldrid.WGPU
 
         private protected override void UpdateTextureCore(Texture texture, IntPtr source, uint sizeInBytes, uint x, uint y, uint z, uint width, uint height, uint depth, uint mipLevel, uint arrayLayer)
         {
+            WGPUTexture wgpuTexture = Util.AssertSubtype<Texture, WGPUTexture>(texture);
+
+            uint rowPitch = FormatHelpers.GetRowPitch(wgpuTexture.Width, wgpuTexture.Format);
+            uint depthPitch = FormatHelpers.GetNumRows(wgpuTexture.Height, wgpuTexture.Format);
+
+            // Todo: array layers?
+
+            WebGPU.QueueWriteTexture(commandQueue,
+                new ImageCopyTexture
+                {
+                    Texture = wgpuTexture.Texture,
+                    MipLevel = mipLevel,
+                    Origin = new Origin3D(x, y, z),
+                    Aspect = TextureAspect.All
+                },
+                (void*)source,
+                sizeInBytes,
+                new TextureDataLayout
+                {
+                    Offset = 0,
+                    BytesPerRow = rowPitch,
+                    RowsPerImage = depthPitch
+                },
+                new Extent3D(width, height, depth));
         }
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)

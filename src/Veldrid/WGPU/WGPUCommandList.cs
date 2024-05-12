@@ -128,6 +128,28 @@ namespace Veldrid.WGPU
                                                 uint dstMipLevel,
                                                 uint dstBaseArrayLayer, uint width, uint height, uint depth, uint layerCount)
         {
+            WGPUTexture wgpuSrc = Util.AssertSubtype<Texture, WGPUTexture>(source);
+            WGPUTexture wgpuDst = Util.AssertSubtype<Texture, WGPUTexture>(destination);
+
+            // Todo: array layers?
+
+            gd.WebGPU.CommandEncoderCopyTextureToTexture(
+                encoder,
+                new ImageCopyTexture
+                {
+                    Texture = wgpuSrc.Texture,
+                    MipLevel = srcMipLevel,
+                    Origin = new Origin3D(srcX, srcY, srcZ),
+                    Aspect = TextureAspect.All
+                },
+                new ImageCopyTexture
+                {
+                    Texture = wgpuDst.Texture,
+                    MipLevel = dstMipLevel,
+                    Origin = new Origin3D(dstX, dstY, dstZ),
+                    Aspect = TextureAspect.All
+                },
+                new Extent3D(width, height, depth));
         }
 
         private protected override void SetPipelineCore(Pipeline pipeline)
