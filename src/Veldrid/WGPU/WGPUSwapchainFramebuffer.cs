@@ -17,6 +17,10 @@ namespace Veldrid.WGPU
 
         public override OutputDescription OutputDescription => outputDescription;
 
+        public override uint Width => width;
+
+        public override uint Height => height;
+
         private readonly WGPUGraphicsDevice gd;
         private readonly TextureFormat colorFormat;
         private readonly PixelFormat? depthFormat;
@@ -24,6 +28,9 @@ namespace Veldrid.WGPU
         private FramebufferAttachment[] colorTargets;
         private FramebufferAttachment? depthTarget;
         private OutputDescription outputDescription;
+
+        private uint width;
+        private uint height;
 
         private bool isDisposed;
 
@@ -36,6 +43,9 @@ namespace Veldrid.WGPU
 
         public void Resize(uint width, uint height)
         {
+            this.width = width;
+            this.height = height;
+
             colorTargets?[0].Target.Dispose();
             depthTarget?.Target.Dispose();
 
