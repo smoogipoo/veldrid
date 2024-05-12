@@ -559,11 +559,11 @@ namespace Veldrid.WGPU
             if ((usage & BufferUsage.VertexBuffer) == BufferUsage.VertexBuffer)
                 wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Vertex;
 
-            if ((usage & BufferUsage.Staging) == BufferUsage.Staging)
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapRead | Silk.NET.WebGPU.BufferUsage.MapWrite;
-
-            if ((usage & BufferUsage.Dynamic) == BufferUsage.Dynamic)
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapWrite;
+            // if ((usage & BufferUsage.Staging) == BufferUsage.Staging)
+            //     wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapRead | Silk.NET.WebGPU.BufferUsage.MapWrite;
+            //
+            // if ((usage & BufferUsage.Dynamic) == BufferUsage.Dynamic)
+            //     wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapWrite;
 
             return wgpuUsage;
         }
