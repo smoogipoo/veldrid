@@ -26,7 +26,7 @@ namespace Veldrid.WGPU
             this.gd = gd;
 
             WGPUShader vertexShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Vertex));
-            WGPUShader fragmentShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Vertex));
+            WGPUShader fragmentShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Fragment));
 
             ColorTargetState* targets = stackalloc ColorTargetState[description.BlendState.AttachmentStates.Length];
             BlendState* blendStates = stackalloc BlendState[description.BlendState.AttachmentStates.Length];
