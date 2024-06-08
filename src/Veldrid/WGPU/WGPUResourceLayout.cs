@@ -67,8 +67,8 @@ namespace Veldrid.WGPU
                     case ResourceKind.TextureReadWrite:
                         entries[i].storageTexture = new WGPUStorageTextureBindingLayout
                         {
-                            access = WGPUStorageTextureAccess.WriteOnly,
-                            format = WGPUTextureFormat.RGBA32Float,
+                            access = WGPUStorageTextureAccess.Undefined,
+                            format = WGPUTextureFormat.Undefined,
                             viewDimension = WGPUTextureViewDimension._2D
                         };
                         break;
