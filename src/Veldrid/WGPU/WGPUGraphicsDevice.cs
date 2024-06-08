@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Silk.NET.WebGPU;
 using Veldrid.MetalBindings;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -25,36 +26,34 @@ namespace Veldrid.WGPU
         public override Swapchain MainSwapchain { get; }
         public override GraphicsDeviceFeatures Features { get; }
 
-        public readonly WebGPU WebGPU;
+        public readonly WGPUInstance NativeInstance;
+        public readonly WGPUSurface NativeSurface;
+        public readonly WGPUAdapter NativeAdapter;
+        public readonly WGPUDevice NativeDevice;
 
-        public readonly Instance* NativeInstance;
-        public readonly Surface* NativeSurface;
-        public readonly Adapter* NativeAdapter;
-        public readonly Device* NativeDevice;
+        private readonly WGPUAdapterProperties adapterProperties;
+        private readonly WGPUSupportedLimits deviceLimits;
+        private readonly WGPUSurfaceCapabilities surfaceCapabilities;
 
-        private readonly AdapterProperties adapterProperties;
-        private readonly SupportedLimits deviceLimits;
-        private readonly SurfaceCapabilities surfaceCapabilities;
-
-        private readonly Queue* commandQueue;
+        private readonly WGPUQueue commandQueue;
 
         private readonly object resetEventsLock = new object();
         private readonly List<ManualResetEvent[]> resetEvents = new List<ManualResetEvent[]>();
 
         public WGPUGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDesc)
         {
-            WebGPU = WebGPU.GetApi();
-
-            NativeInstance = WebGPU.CreateInstance(new InstanceDescriptor());
+            WGPUInstanceDescriptor instanceDescriptor = default;
+            NativeInstance = wgpuCreateInstance(&instanceDescriptor);
             NativeSurface = createSurface(swapchainDesc);
-            NativeAdapter = requestAdapter(new RequestAdapterOptions
+            NativeAdapter = requestAdapter(new WGPURequestAdapterOptions
             {
-                CompatibleSurface = NativeSurface,
+                compatibleSurface = NativeSurface,
             });
 
-            uint featureCount = (uint)WebGPU.AdapterEnumerateFeatures(NativeAdapter, null);
-            FeatureName[] features = new FeatureName[featureCount];
-            WebGPU.AdapterEnumerateFeatures(NativeAdapter, features);
+            uint featureCount = (uint)wgpuAdapterEnumerateFeatures(NativeAdapter, null);
+            WGPUFeatureName[] features = new WGPUFeatureName[featureCount];
+            fixed (WGPUFeatureName* featurePtr = features)
+                wgpuAdapterEnumerateFeatures(NativeAdapter, featurePtr);
 
             // Todo: Not quite...
             Features = new GraphicsDeviceFeatures(
@@ -79,64 +78,78 @@ namespace Veldrid.WGPU
                 true
             );
 
-            NativeDevice = requestDevice(new DeviceDescriptor());
-            WebGPU.DeviceSetUncapturedErrorCallback(NativeDevice, PfnErrorCallback.From(onUncapturedError), null);
+            NativeDevice = requestDevice(new WGPUDeviceDescriptor());
+            wgpuDeviceSetUncapturedErrorCallback(NativeDevice, &onUncapturedError, IntPtr.Zero);
 
-            WebGPU.SurfaceGetCapabilities(NativeSurface, NativeAdapter, ref surfaceCapabilities);
-            WebGPU.AdapterGetProperties(NativeAdapter, ref adapterProperties);
-            WebGPU.DeviceGetLimits(NativeDevice, ref deviceLimits);
+            WGPUSurfaceCapabilities caps;
+            wgpuSurfaceGetCapabilities(NativeSurface, NativeAdapter, &caps);
+            surfaceCapabilities = caps;
 
-            commandQueue = WebGPU.DeviceGetQueue(NativeDevice);
+            WGPUAdapterProperties props;
+            wgpuAdapterGetProperties(NativeAdapter, &props);
+            adapterProperties = props;
 
-            DeviceName = Marshal.PtrToStringUTF8((IntPtr)adapterProperties.DriverDescription);
-            VendorName = Marshal.PtrToStringUTF8((IntPtr)adapterProperties.VendorName);
+            WGPUSupportedLimits limits;
+            wgpuDeviceGetLimits(NativeDevice, &limits);
+            deviceLimits = limits;
+
+            commandQueue = wgpuDeviceGetQueue(NativeDevice);
+
+            DeviceName = Interop.GetString(adapterProperties.driverDescription);
+            VendorName = Interop.GetString(adapterProperties.vendorName);
 
             ResourceFactory = new WGPUResourceFactory(this);
             MainSwapchain = new WGPUSwapchain(this, ref swapchainDesc);
         }
 
-        private Surface* createSurface(SwapchainDescription swapchainDesc)
+        private WGPUSurface createSurface(SwapchainDescription swapchainDesc)
         {
             if (swapchainDesc.Source is UwpSwapchainSource)
                 throw new NotImplementedException();
 
             if (swapchainDesc.Source is Win32SwapchainSource win32Source)
             {
-                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                WGPUSurfaceDescriptor desc = new WGPUSurfaceDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromWindowsHWND
+                    nextInChain = WGPUUtil.Chain(new WGPUSurfaceDescriptorFromWindowsHWND
                     {
-                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromWindowsHwnd },
-                        Hinstance = (void*)win32Source.Hinstance,
-                        Hwnd = (void*)win32Source.Hwnd
+                        chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceDescriptorFromWindowsHWND },
+                        hinstance = win32Source.Hinstance,
+                        hwnd = win32Source.Hwnd
                     })
-                });
+                };
+
+                return wgpuInstanceCreateSurface(NativeInstance, &desc);
             }
 
             if (swapchainDesc.Source is XlibSwapchainSource xlibSource)
             {
-                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                WGPUSurfaceDescriptor desc = new WGPUSurfaceDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromXlibWindow
+                    nextInChain = WGPUUtil.Chain(new WGPUSurfaceDescriptorFromXlibWindow
                     {
-                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromXlibWindow },
-                        Display = (void*)xlibSource.Display,
-                        Window = (uint)xlibSource.Window
+                        chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceDescriptorFromXlibWindow },
+                        display = xlibSource.Display,
+                        window = (uint)xlibSource.Window
                     })
-                });
+                };
+
+                return wgpuInstanceCreateSurface(NativeInstance, &desc);
             }
 
             if (swapchainDesc.Source is WaylandSwapchainSource waylandSource)
             {
-                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                WGPUSurfaceDescriptor desc = new WGPUSurfaceDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromWaylandSurface
+                    nextInChain = WGPUUtil.Chain(new WGPUSurfaceDescriptorFromWaylandSurface
                     {
-                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromWaylandSurface },
-                        Display = (void*)waylandSource.Display,
-                        Surface = (void*)waylandSource.Surface
+                        chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceDescriptorFromWaylandSurface },
+                        display = waylandSource.Display,
+                        surface = waylandSource.Surface
                     })
-                });
+                };
+
+                return wgpuInstanceCreateSurface(NativeInstance, &desc);
             }
 
             if (swapchainDesc.Source is NSWindowSwapchainSource nsWindowSource)
@@ -151,14 +164,16 @@ namespace Veldrid.WGPU
                     contentView.layer = metalLayer.NativePtr;
                 }
 
-                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                WGPUSurfaceDescriptor desc = new WGPUSurfaceDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                    nextInChain = WGPUUtil.Chain(new WGPUSurfaceDescriptorFromMetalLayer
                     {
-                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
-                        Layer = (void*)metalLayer.NativePtr,
+                        chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceDescriptorFromMetalLayer },
+                        layer = metalLayer.NativePtr,
                     })
-                });
+                };
+
+                return wgpuInstanceCreateSurface(NativeInstance, &desc);
             }
 
             if (swapchainDesc.Source is NSViewSwapchainSource nsViewSource)
@@ -172,14 +187,16 @@ namespace Veldrid.WGPU
                     contentView.layer = metalLayer.NativePtr;
                 }
 
-                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                WGPUSurfaceDescriptor desc = new WGPUSurfaceDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                    nextInChain = WGPUUtil.Chain(new WGPUSurfaceDescriptorFromMetalLayer
                     {
-                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
-                        Layer = (void*)metalLayer.NativePtr,
+                        chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceDescriptorFromMetalLayer },
+                        layer = metalLayer.NativePtr,
                     })
-                });
+                };
+
+                return wgpuInstanceCreateSurface(NativeInstance, &desc);
             }
 
             if (swapchainDesc.Source is UIViewSwapchainSource uiViewSource)
@@ -194,60 +211,57 @@ namespace Veldrid.WGPU
                     uiView.layer.addSublayer(metalLayer.NativePtr);
                 }
 
-                return WebGPU.InstanceCreateSurface(NativeInstance, new SurfaceDescriptor
+                WGPUSurfaceDescriptor desc = new WGPUSurfaceDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new SurfaceDescriptorFromMetalLayer
+                    nextInChain = WGPUUtil.Chain(new WGPUSurfaceDescriptorFromMetalLayer
                     {
-                        Chain = new ChainedStruct { SType = SType.SurfaceDescriptorFromMetalLayer },
-                        Layer = (void*)metalLayer.NativePtr,
+                        chain = new WGPUChainedStruct { sType = WGPUSType.SurfaceDescriptorFromMetalLayer },
+                        layer = metalLayer.NativePtr,
                     })
-                });
+                };
+
+                return wgpuInstanceCreateSurface(NativeInstance, &desc);
             }
 
             throw new VeldridException($"Unsupported swap chain source: {swapchainDesc.Source.GetType()}.");
         }
 
-        private Adapter* requestAdapter(RequestAdapterOptions options)
+        private WGPUAdapter requestAdapter(WGPURequestAdapterOptions options)
         {
-            Adapter* result = null;
-
-            using ManualResetEventSlim adapterRequestEvent = new ManualResetEventSlim();
-            WebGPU.InstanceRequestAdapter(NativeInstance, options, PfnRequestAdapterCallback.From((status, adapter, message, userData) =>
-            {
-                if (status == RequestAdapterStatus.Success)
-                    result = adapter;
-
-                // ReSharper disable once AccessToDisposedClosure
-                adapterRequestEvent.Set();
-            }), null);
-
-            adapterRequestEvent.Wait();
-
+            WGPUAdapter result;
+            wgpuInstanceRequestAdapter(NativeInstance, &options, &onRequestAdapterCallback, new IntPtr(&result));
             return result;
         }
 
-        private Device* requestDevice(DeviceDescriptor desc)
+        private WGPUDevice requestDevice(WGPUDeviceDescriptor desc)
         {
-            Device* result = null;
-
-            using ManualResetEventSlim adapterRequestEvent = new ManualResetEventSlim();
-            WebGPU.AdapterRequestDevice(NativeAdapter, desc, PfnRequestDeviceCallback.From((status, device, message, userData) =>
-            {
-                if (status == RequestDeviceStatus.Success)
-                    result = device;
-
-                // ReSharper disable once AccessToDisposedClosure
-                adapterRequestEvent.Set();
-            }), null);
-
-            adapterRequestEvent.Wait();
-
+            WGPUDevice result;
+            wgpuAdapterRequestDevice(NativeAdapter, &desc, &onRequestDeviceCallback, new IntPtr(&result));
             return result;
         }
 
-        private void onUncapturedError(ErrorType type, byte* message, void* userData)
+        [UnmanagedCallersOnly]
+        private static void onRequestAdapterCallback(WGPURequestAdapterStatus status, WGPUAdapter adapter, sbyte* message, IntPtr userData)
         {
-            Console.WriteLine($"[{type}] WebGPU: {Marshal.PtrToStringUTF8((IntPtr)message)}");
+            if (status == WGPURequestAdapterStatus.Success)
+                *(WGPUAdapter*)userData = adapter;
+            else
+                throw new VeldridException($"Could not get WebGPU adapter: {Interop.GetString(message)}");
+        }
+
+        [UnmanagedCallersOnly]
+        private static void onRequestDeviceCallback(WGPURequestDeviceStatus status, WGPUDevice device, sbyte* message, IntPtr userData)
+        {
+            if (status == WGPURequestDeviceStatus.Success)
+                *(WGPUDevice*)userData = device;
+            else
+                throw new VeldridException($"Could not get WebGPU device: {Interop.GetString(message)}");
+        }
+
+        [UnmanagedCallersOnly]
+        private static void onUncapturedError(WGPUErrorType type, sbyte* message, IntPtr userData)
+        {
+            Console.WriteLine($"[{type}] WebGPU: {Interop.GetString(message)}");
         }
 
         public override GraphicsBackend BackendType => GraphicsBackend.WebGPU;
@@ -294,9 +308,9 @@ namespace Veldrid.WGPU
             throw new NotImplementedException();
         }
 
-        internal override uint GetUniformBufferMinOffsetAlignmentCore() => deviceLimits.Limits.MinUniformBufferOffsetAlignment;
+        internal override uint GetUniformBufferMinOffsetAlignmentCore() => deviceLimits.limits.minUniformBufferOffsetAlignment;
 
-        internal override uint GetStructuredBufferMinOffsetAlignmentCore() => deviceLimits.Limits.MinStorageBufferOffsetAlignment;
+        internal override uint GetStructuredBufferMinOffsetAlignmentCore() => deviceLimits.limits.minStorageBufferOffsetAlignment;
 
         protected override MappedResource MapCore(IMappableResource resource, MapMode mode, uint subresource)
         {
@@ -312,11 +326,10 @@ namespace Veldrid.WGPU
         {
             WGPUCommandList wgpuCommandList = Util.AssertSubtype<CommandList, WGPUCommandList>(commandList);
 
-            CommandBuffer** buffer = stackalloc CommandBuffer*[1];
-            buffer[0] = wgpuCommandList.ConsumeCommandBuffer();
+            WGPUCommandBuffer buffer = wgpuCommandList.ConsumeCommandBuffer();
 
-            WebGPU.QueueSubmit(commandQueue, 1, buffer);
-            WebGPU.CommandBufferRelease(buffer[0]);
+            wgpuQueueSubmit(commandQueue, 1, &buffer);
+            wgpuCommandBufferRelease(buffer);
         }
 
         private protected override void SwapBuffersCore(Swapchain swapchain)
@@ -342,29 +355,30 @@ namespace Veldrid.WGPU
 
             // Todo: array layers?
 
-            WebGPU.QueueWriteTexture(commandQueue,
-                new ImageCopyTexture
-                {
-                    Texture = wgpuTexture.Texture,
-                    MipLevel = mipLevel,
-                    Origin = new Origin3D(x, y, z),
-                    Aspect = TextureAspect.All
-                },
-                (void*)source,
-                sizeInBytes,
-                new TextureDataLayout
-                {
-                    Offset = 0,
-                    BytesPerRow = rowPitch,
-                    RowsPerImage = depthPitch
-                },
-                new Extent3D(width, height, depth));
+            WGPUImageCopyTexture dest = new WGPUImageCopyTexture
+            {
+                texture = wgpuTexture.Texture,
+                mipLevel = mipLevel,
+                origin = new WGPUOrigin3D(x, y, z),
+                aspect = WGPUTextureAspect.All
+            };
+
+            WGPUTextureDataLayout layout = new WGPUTextureDataLayout
+            {
+                offset = 0,
+                bytesPerRow = rowPitch,
+                rowsPerImage = depthPitch
+            };
+
+            WGPUExtent3D writeSize = new WGPUExtent3D(width, height, depth);
+
+            wgpuQueueWriteTexture(commandQueue, &dest, (void*)source, sizeInBytes, &layout, &writeSize);
         }
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
             WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
-            WebGPU.QueueWriteBuffer(commandQueue, wgpuBuffer.Buffer, bufferOffsetInBytes, (void*)source, sizeInBytes);
+            wgpuQueueWriteBuffer(commandQueue, wgpuBuffer.Buffer, bufferOffsetInBytes, (void*)source, sizeInBytes);
         }
 
         private protected override bool GetPixelFormatSupportCore(PixelFormat format, TextureType type, TextureUsage usage, out PixelFormatProperties properties)
@@ -405,12 +419,12 @@ namespace Veldrid.WGPU
 
         protected override void PlatformDispose()
         {
-            if (NativeInstance != null)
-                WebGPU.InstanceRelease(NativeInstance);
-            if (NativeAdapter != null)
-                WebGPU.AdapterRelease(NativeAdapter);
-            if (NativeDevice != null)
-                WebGPU.DeviceRelease(NativeDevice);
+            if (NativeInstance.IsNotNull)
+                wgpuInstanceRelease(NativeInstance);
+            if (NativeAdapter.IsNotNull)
+                wgpuAdapterRelease(NativeAdapter);
+            if (NativeDevice.IsNotNull)
+                wgpuDeviceRelease(NativeDevice);
 
             MainSwapchain?.Dispose();
         }

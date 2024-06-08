@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -10,29 +11,27 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public override Silk.NET.WebGPU.TextureView* View { get; }
-
-        private readonly WGPUGraphicsDevice gd;
+        public override WebGPU.WGPUTextureView View { get; }
 
         private bool isDisposed;
 
         public WGPUTextureView(WGPUGraphicsDevice gd, ref TextureViewDescription description)
             : base(ref description)
         {
-            this.gd = gd;
-
             WGPUTexture wgpuTexture = Util.AssertSubtype<Texture, WGPUTexture>(description.Target);
 
-            View = gd.WebGPU.TextureCreateView(wgpuTexture.Texture, new TextureViewDescriptor
+            WGPUTextureViewDescriptor desc = new WGPUTextureViewDescriptor
             {
-                Format = WGPUFormats.VdToWGPUTextureFormat(Format, (Target.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil),
-                Dimension = WGPUFormats.VdToWGPUTextureViewDimention(Target.Depth),
-                BaseMipLevel = BaseMipLevel,
-                MipLevelCount = MipLevels,
-                BaseArrayLayer = BaseArrayLayer,
-                ArrayLayerCount = ArrayLayers,
-                Aspect = TextureAspect.All
-            });
+                format = WGPUFormats.VdToWGPUTextureFormat(Format, (Target.Usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil),
+                dimension = WGPUFormats.VdToWGPUTextureViewDimention(Target.Depth),
+                baseMipLevel = BaseMipLevel,
+                mipLevelCount = MipLevels,
+                baseArrayLayer = BaseArrayLayer,
+                arrayLayerCount = ArrayLayers,
+                aspect = WGPUTextureAspect.All
+            };
+
+            View = wgpuTextureCreateView(wgpuTexture.Texture, &desc);
         }
 
         public override void Dispose()
@@ -40,8 +39,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (View != null)
-                gd.WebGPU.TextureViewRelease(View);
+            if (View.IsNotNull)
+                wgpuTextureViewRelease(View);
 
             isDisposed = true;
         }

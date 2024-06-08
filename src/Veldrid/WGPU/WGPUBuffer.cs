@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -12,24 +13,22 @@ namespace Veldrid.WGPU
         public override BufferUsage Usage { get; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly Buffer* Buffer;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WebGPU.WGPUBuffer Buffer;
 
         private bool isDisposed;
 
         public WGPUBuffer(WGPUGraphicsDevice gd, ref BufferDescription description)
         {
-            this.gd = gd;
-
             SizeInBytes = description.SizeInBytes;
             Usage = description.Usage;
 
-            Buffer = gd.WebGPU.DeviceCreateBuffer(gd.NativeDevice, new BufferDescriptor
+            WGPUBufferDescriptor desc = new WGPUBufferDescriptor
             {
-                Usage = WGPUFormats.VdToWGPUBufferUsage(Usage),
-                Size = SizeInBytes
-            });
+                usage = WGPUFormats.VdToWGPUBufferUsage(Usage),
+                size = SizeInBytes
+            };
+
+            Buffer = wgpuDeviceCreateBuffer(gd.NativeDevice, &desc);
         }
 
         public override void Dispose()
@@ -37,8 +36,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (Buffer != null)
-                gd.WebGPU.BufferRelease(Buffer);
+            if (Buffer.IsNotNull)
+                wgpuBufferRelease(Buffer);
 
             isDisposed = true;
         }

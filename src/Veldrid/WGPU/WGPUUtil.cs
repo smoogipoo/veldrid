@@ -3,18 +3,18 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Silk.NET.WebGPU;
+using WebGPU;
 
 namespace Veldrid.WGPU
 {
     internal static unsafe class WGPUUtil
     {
-        public static ChainedStruct* Chain<T>(T data)
+        public static WGPUChainedStruct* Chain<T>(T data)
             where T : unmanaged
         {
             IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf<T>());
             Marshal.StructureToPtr(data, ptr, false);
-            return (ChainedStruct*)ptr;
+            return (WGPUChainedStruct*)ptr;
         }
     }
 }

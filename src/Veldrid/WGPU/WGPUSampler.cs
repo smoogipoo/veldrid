@@ -2,7 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -11,35 +12,31 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly Silk.NET.WebGPU.Sampler* Sampler;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WebGPU.WGPUSampler Sampler;
 
         private bool isDisposed;
 
         public WGPUSampler(WGPUGraphicsDevice gd, ref SamplerDescription description)
         {
-            this.gd = gd;
-
             WGPUFormats.GetFilterParams(description.Filter, out var minFilter, out var magFilter, out var mipmapFilter);
 
-            Sampler = gd.WebGPU.DeviceCreateSampler(gd.NativeDevice, new SamplerDescriptor
+            WGPUSamplerDescriptor desc = new WGPUSamplerDescriptor
             {
-                NextInChain = null,
-                Label = null,
-                AddressModeU = WGPUFormats.VdToWGPUAddressMode(description.AddressModeU),
-                AddressModeV = WGPUFormats.VdToWGPUAddressMode(description.AddressModeV),
-                AddressModeW = WGPUFormats.VdToWGPUAddressMode(description.AddressModeW),
-                MinFilter = minFilter,
-                MagFilter = magFilter,
-                MipmapFilter = mipmapFilter,
-                LodMinClamp = description.MinimumLod,
-                LodMaxClamp = description.MaximumLod,
-                Compare = description.ComparisonKind != null
+                addressModeU = WGPUFormats.VdToWGPUAddressMode(description.AddressModeU),
+                addressModeV = WGPUFormats.VdToWGPUAddressMode(description.AddressModeV),
+                addressModeW = WGPUFormats.VdToWGPUAddressMode(description.AddressModeW),
+                minFilter = minFilter,
+                magFilter = magFilter,
+                mipmapFilter = mipmapFilter,
+                lodMinClamp = description.MinimumLod,
+                lodMaxClamp = description.MaximumLod,
+                compare = description.ComparisonKind != null
                     ? WGPUFormats.VdToWGPUCompareFunction(description.ComparisonKind.Value)
-                    : CompareFunction.Never,
-                MaxAnisotropy = (ushort)Math.Max(1, description.MaximumAnisotropy)
-            });
+                    : WGPUCompareFunction.Never,
+                maxAnisotropy = (ushort)Math.Max(1, description.MaximumAnisotropy)
+            };
+
+            Sampler = wgpuDeviceCreateSampler(gd.NativeDevice, &desc);
         }
 
         public override void Dispose()
@@ -47,8 +44,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (Sampler != null)
-                gd.WebGPU.SamplerRelease(Sampler);
+            if (Sampler.IsNotNull)
+                wgpuSamplerRelease(Sampler);
 
             isDisposed = true;
         }

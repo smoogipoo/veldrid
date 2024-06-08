@@ -40,7 +40,7 @@ namespace Veldrid.WGPU
             => new WGPUPipeline(gd, ref description);
 
         protected override Texture CreateTextureCore(ulong nativeTexture, ref TextureDescription description)
-            => new WGPUTexture(gd, ref description, (Silk.NET.WebGPU.Texture*)nativeTexture);
+            => new WGPUTexture(gd, ref description, *(WebGPU.WGPUTexture*)nativeTexture);
 
         protected override Texture CreateTextureCore(ref TextureDescription description)
             => new WGPUTexture(gd, ref description);

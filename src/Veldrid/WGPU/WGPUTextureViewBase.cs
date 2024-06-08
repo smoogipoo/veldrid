@@ -5,7 +5,7 @@ namespace Veldrid.WGPU
 {
     internal abstract unsafe class WGPUTextureViewBase : TextureView
     {
-        public abstract Silk.NET.WebGPU.TextureView* View { get; }
+        public abstract WebGPU.WGPUTextureView View { get; }
 
         protected WGPUTextureViewBase(ref TextureViewDescription description)
             : base(ref description)

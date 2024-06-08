@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -10,28 +11,26 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly ShaderModule* Module;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WGPUShaderModule Module;
 
         private bool isDisposed;
 
         public WGPUShader(WGPUGraphicsDevice gd, ref ShaderDescription description)
             : base(description.Stage, description.EntryPoint)
         {
-            this.gd = gd;
-
             fixed (byte* codePtr = description.ShaderBytes)
             {
-                Module = gd.WebGPU.DeviceCreateShaderModule(gd.NativeDevice, new ShaderModuleDescriptor
+                WGPUShaderModuleDescriptor desc = new WGPUShaderModuleDescriptor
                 {
-                    NextInChain = WGPUUtil.Chain(new ShaderModuleSPIRVDescriptor
+                    nextInChain = WGPUUtil.Chain(new WGPUShaderModuleSPIRVDescriptor
                     {
-                        Chain = { SType = SType.ShaderModuleSpirvDescriptor },
-                        Code = (uint*)codePtr,
-                        CodeSize = (uint)description.ShaderBytes.Length / sizeof(uint),
+                        chain = { sType = WGPUSType.ShaderModuleSPIRVDescriptor },
+                        code = (uint*)codePtr,
+                        codeSize = (uint)description.ShaderBytes.Length / sizeof(uint),
                     }),
-                });
+                };
+
+                Module = wgpuDeviceCreateShaderModule(gd.NativeDevice, &desc);
             }
         }
 
@@ -40,8 +39,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (Module != null)
-                gd.WebGPU.ShaderModuleRelease(Module);
+            if (Module.IsNotNull)
+                wgpuShaderModuleRelease(Module);
 
             isDisposed = true;
         }

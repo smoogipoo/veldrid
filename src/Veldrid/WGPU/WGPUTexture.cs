@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -19,34 +20,32 @@ namespace Veldrid.WGPU
         public override TextureSampleCount SampleCount { get; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly Silk.NET.WebGPU.Texture* Texture;
+        public readonly WebGPU.WGPUTexture Texture;
 
         public readonly uint ActualArrayLayers;
         public readonly uint ActualSampleCount;
-        public readonly TextureFormat ActualFormat;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WGPUTextureFormat ActualFormat;
 
         private bool isDisposed;
 
         public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description)
-            : this(gd, ref description, null)
+            : this(gd, ref description, default)
         {
-            Texture = gd.WebGPU.DeviceCreateTexture(gd.NativeDevice, new TextureDescriptor
+            WGPUTextureDescriptor desc = new WGPUTextureDescriptor
             {
-                Usage = WGPUFormats.VdToWGPUTextureUsage(Usage),
-                Dimension = WGPUFormats.VdToWGPUTextureDimention(Depth),
-                Size = new Extent3D(Width, Height, Depth * ActualArrayLayers),
-                Format = ActualFormat,
-                MipLevelCount = MipLevels,
-                SampleCount = ActualSampleCount
-            });
+                usage = WGPUFormats.VdToWGPUTextureUsage(Usage),
+                dimension = WGPUFormats.VdToWGPUTextureDimention(Depth),
+                size = new WGPUExtent3D(Width, Height, Depth * ActualArrayLayers),
+                format = ActualFormat,
+                mipLevelCount = MipLevels,
+                sampleCount = ActualSampleCount
+            };
+
+            Texture = wgpuDeviceCreateTexture(gd.NativeDevice, &desc);
         }
 
-        public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description, Silk.NET.WebGPU.Texture* texture)
+        public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description, WebGPU.WGPUTexture texture)
         {
-            this.gd = gd;
-
             Texture = texture;
 
             Width = description.Width;
@@ -71,8 +70,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (Texture != null)
-                gd.WebGPU.TextureRelease(Texture);
+            if (Texture.IsNotNull)
+                wgpuTextureRelease(Texture);
 
             isDisposed = true;
         }

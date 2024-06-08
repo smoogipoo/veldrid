@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -13,7 +14,7 @@ namespace Veldrid.WGPU
 
         private readonly WGPUGraphicsDevice gd;
         private readonly WGPUSwapchainFramebuffer framebuffer;
-        private readonly TextureFormat colorFormat;
+        private readonly WGPUTextureFormat colorFormat;
 
         private bool isDisposed;
 
@@ -21,7 +22,7 @@ namespace Veldrid.WGPU
         {
             this.gd = gd;
 
-            colorFormat = description.ColorSrgb ? TextureFormat.Bgra8UnormSrgb : TextureFormat.Bgra8Unorm;
+            colorFormat = description.ColorSrgb ? WGPUTextureFormat.BGRA8UnormSrgb : WGPUTextureFormat.BGRA8Unorm;
             framebuffer = new WGPUSwapchainFramebuffer(gd, colorFormat, description.DepthFormat);
 
             Resize(description.Width, description.Height);
@@ -31,15 +32,17 @@ namespace Veldrid.WGPU
 
         public override void Resize(uint width, uint height)
         {
-            gd.WebGPU.SurfaceConfigure(gd.NativeSurface, new SurfaceConfiguration
+            WGPUSurfaceConfiguration config = new WGPUSurfaceConfiguration
             {
-                Device = gd.NativeDevice,
-                Width = width,
-                Height = height,
-                Format = colorFormat,
-                Usage = Silk.NET.WebGPU.TextureUsage.RenderAttachment,
-                PresentMode = PresentMode.Fifo
-            });
+                device = gd.NativeDevice,
+                width = width,
+                height = height,
+                format = colorFormat,
+                usage = WGPUTextureUsage.RenderAttachment,
+                presentMode = WGPUPresentMode.Fifo
+            };
+
+            wgpuSurfaceConfigure(gd.NativeSurface, &config);
 
             framebuffer.Resize(width, height);
         }
@@ -47,7 +50,7 @@ namespace Veldrid.WGPU
         public void Present()
         {
             framebuffer.ReleaseView();
-            gd.WebGPU.SurfacePresent(gd.NativeSurface);
+            wgpuSurfacePresent(gd.NativeSurface);
         }
 
         public override void Dispose()

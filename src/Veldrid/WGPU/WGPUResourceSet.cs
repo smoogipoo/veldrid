@@ -2,7 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -11,20 +12,16 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly BindGroup* BindGroup;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WGPUBindGroup BindGroup;
 
         private bool isDisposed;
 
         public WGPUResourceSet(WGPUGraphicsDevice gd, ref ResourceSetDescription description)
             : base(ref description)
         {
-            this.gd = gd;
-
             var wgpuResourceLayout = Util.AssertSubtype<ResourceLayout, WGPUResourceLayout>(description.Layout);
 
-            BindGroupEntry* entries = stackalloc BindGroupEntry[description.BoundResources.Length];
+            WGPUBindGroupEntry* entries = stackalloc WGPUBindGroupEntry[description.BoundResources.Length];
 
             for (int i = 0; i < description.BoundResources.Length; i++)
             {
@@ -36,42 +33,44 @@ namespace Veldrid.WGPU
                     var range = Util.GetBufferRange(resource, 0);
                     var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(range.Buffer);
 
-                    entries[i] = new BindGroupEntry
+                    entries[i] = new WGPUBindGroupEntry
                     {
-                        Binding = (uint)i,
-                        Buffer = wgpuBuffer.Buffer,
-                        Offset = range.Offset,
-                        Size = range.SizeInBytes
+                        binding = (uint)i,
+                        buffer = wgpuBuffer.Buffer,
+                        offset = range.Offset,
+                        size = range.SizeInBytes
                     };
                 }
                 else if (layout.Kind == ResourceKind.TextureReadOnly || layout.Kind == ResourceKind.TextureReadWrite)
                 {
-                    var textureView = Util.GetTextureView(this.gd, resource);
+                    var textureView = Util.GetTextureView(gd, resource);
                     var wgpuTextureView = Util.AssertSubtype<TextureView, WGPUTextureView>(textureView);
 
-                    entries[i] = new BindGroupEntry
+                    entries[i] = new WGPUBindGroupEntry
                     {
-                        Binding = (uint)i,
-                        TextureView = wgpuTextureView.View
+                        binding = (uint)i,
+                        textureView = wgpuTextureView.View
                     };
                 }
                 else if (layout.Kind == ResourceKind.Sampler)
                 {
                     var wgpuSampler = Util.AssertSubtype<IBindableResource, WGPUSampler>(resource);
 
-                    entries[i] = new BindGroupEntry
+                    entries[i] = new WGPUBindGroupEntry
                     {
-                        Sampler = wgpuSampler.Sampler,
+                        sampler = wgpuSampler.Sampler,
                     };
                 }
             }
 
-            BindGroup = gd.WebGPU.DeviceCreateBindGroup(gd.NativeDevice, new BindGroupDescriptor
+            WGPUBindGroupDescriptor desc = new WGPUBindGroupDescriptor
             {
-                EntryCount = (UIntPtr)description.BoundResources.Length,
-                Entries = entries,
-                Layout = wgpuResourceLayout.Layout
-            });
+                entryCount = (UIntPtr)description.BoundResources.Length,
+                entries = entries,
+                layout = wgpuResourceLayout.Layout
+            };
+
+            BindGroup = wgpuDeviceCreateBindGroup(gd.NativeDevice, &desc);
         }
 
         public override void Dispose()
@@ -79,8 +78,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (BindGroup != null)
-                gd.WebGPU.BindGroupRelease(BindGroup);
+            if (BindGroup.IsNotNull)
+                wgpuBindGroupRelease(BindGroup);
 
             isDisposed = true;
         }

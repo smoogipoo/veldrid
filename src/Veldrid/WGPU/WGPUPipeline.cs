@@ -2,8 +2,8 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Linq;
-using Silk.NET.WebGPU;
-using Veldrid.Vk;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -13,57 +13,53 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly PipelineLayout* Layout;
-        public readonly RenderPipeline* RenderPipeline;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WGPUPipelineLayout Layout;
+        public readonly WGPURenderPipeline RenderPipeline;
 
         private bool isDisposed;
 
         public WGPUPipeline(WGPUGraphicsDevice gd, ref GraphicsPipelineDescription description)
             : base(ref description)
         {
-            this.gd = gd;
-
             WGPUShader vertexShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Vertex));
             WGPUShader fragmentShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Fragment));
 
-            ColorTargetState* targets = stackalloc ColorTargetState[description.BlendState.AttachmentStates.Length];
-            BlendState* blendStates = stackalloc BlendState[description.BlendState.AttachmentStates.Length];
-            ConstantEntry* constants = stackalloc ConstantEntry[description.ShaderSet.Specializations?.Length ?? 0];
-            VertexBufferLayout* vertexBufferLayouts = stackalloc VertexBufferLayout[description.ShaderSet.VertexLayouts.Length];
-            VertexAttribute* vertexAttributes = stackalloc VertexAttribute[description.ShaderSet.VertexLayouts.Sum(l => l.Elements.Length)];
-            BindGroupLayout** bindGroups = stackalloc BindGroupLayout*[description.ResourceLayouts.Length];
+            WGPUColorTargetState* targets = stackalloc WGPUColorTargetState[description.BlendState.AttachmentStates.Length];
+            WGPUBlendState* blendStates = stackalloc WGPUBlendState[description.BlendState.AttachmentStates.Length];
+            WGPUConstantEntry* constants = stackalloc WGPUConstantEntry[description.ShaderSet.Specializations?.Length ?? 0];
+            WGPUVertexBufferLayout* vertexBufferLayouts = stackalloc WGPUVertexBufferLayout[description.ShaderSet.VertexLayouts.Length];
+            WGPUVertexAttribute* vertexAttributes = stackalloc WGPUVertexAttribute[description.ShaderSet.VertexLayouts.Sum(l => l.Elements.Length)];
+            WGPUBindGroupLayout* bindGroups = stackalloc WGPUBindGroupLayout[description.ResourceLayouts.Length];
 
-            DepthStencilState* depthStencilState = stackalloc DepthStencilState[1];
-            FragmentState* fragmentState = stackalloc FragmentState[1];
+            WGPUDepthStencilState* depthStencilState = stackalloc WGPUDepthStencilState[1];
+            WGPUFragmentState* fragmentState = stackalloc WGPUFragmentState[1];
 
             for (int i = 0; i < description.BlendState.AttachmentStates.Length; i++)
             {
                 var blendState = description.BlendState.AttachmentStates[i];
                 var outputState = description.Outputs.ColorAttachments[i];
 
-                blendStates[i] = new BlendState
+                blendStates[i] = new WGPUBlendState
                 {
-                    Color = new BlendComponent
+                    color = new WGPUBlendComponent
                     {
-                        Operation = WGPUFormats.VdToWGPUBlendOperation(blendState.ColorFunction),
-                        SrcFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.SourceColorFactor),
-                        DstFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.DestinationColorFactor)
+                        operation = WGPUFormats.VdToWGPUBlendOperation(blendState.ColorFunction),
+                        srcFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.SourceColorFactor),
+                        dstFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.DestinationColorFactor)
                     },
-                    Alpha = new BlendComponent
+                    alpha = new WGPUBlendComponent
                     {
-                        Operation = WGPUFormats.VdToWGPUBlendOperation(blendState.AlphaFunction),
-                        SrcFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.SourceAlphaFactor),
-                        DstFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.DestinationAlphaFactor)
+                        operation = WGPUFormats.VdToWGPUBlendOperation(blendState.AlphaFunction),
+                        srcFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.SourceAlphaFactor),
+                        dstFactor = WGPUFormats.VdToWGPUBlendFactor(blendState.DestinationAlphaFactor)
                     }
                 };
 
-                targets[i] = new ColorTargetState
+                targets[i] = new WGPUColorTargetState
                 {
-                    Format = WGPUFormats.VdToWGPUTextureFormat(outputState.Format),
-                    Blend = &blendStates[i],
-                    WriteMask = WGPUFormats.VdToWGPUColorWriteMask(blendState.ColorWriteMask.GetOrDefault())
+                    format = WGPUFormats.VdToWGPUTextureFormat(outputState.Format),
+                    blend = &blendStates[i],
+                    writeMask = WGPUFormats.VdToWGPUColorWriteMask(blendState.ColorWriteMask.GetOrDefault())
                 };
             }
 
@@ -71,27 +67,27 @@ namespace Veldrid.WGPU
             {
                 var depthState = description.DepthStencilState;
 
-                depthStencilState[0] = new DepthStencilState
+                depthStencilState[0] = new WGPUDepthStencilState
                 {
-                    Format = WGPUFormats.VdToWGPUTextureFormat(depthAttachment.Format),
-                    DepthWriteEnabled = depthState.DepthWriteEnabled,
-                    DepthCompare = WGPUFormats.VdToWGPUCompareFunction(depthState.DepthComparison),
-                    StencilFront = new StencilFaceState
+                    format = WGPUFormats.VdToWGPUTextureFormat(depthAttachment.Format),
+                    depthWriteEnabled = depthState.DepthWriteEnabled,
+                    depthCompare = WGPUFormats.VdToWGPUCompareFunction(depthState.DepthComparison),
+                    stencilFront = new WGPUStencilFaceState
                     {
-                        Compare = WGPUFormats.VdToWGPUCompareFunction(depthState.StencilFront.Comparison),
-                        FailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Fail),
-                        DepthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.DepthFail),
-                        PassOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Pass)
+                        compare = WGPUFormats.VdToWGPUCompareFunction(depthState.StencilFront.Comparison),
+                        failOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Fail),
+                        depthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.DepthFail),
+                        passOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Pass)
                     },
-                    StencilBack = new StencilFaceState
+                    stencilBack = new WGPUStencilFaceState
                     {
-                        Compare = WGPUFormats.VdToWGPUCompareFunction(depthState.StencilBack.Comparison),
-                        FailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Fail),
-                        DepthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.DepthFail),
-                        PassOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Pass)
+                        compare = WGPUFormats.VdToWGPUCompareFunction(depthState.StencilBack.Comparison),
+                        failOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Fail),
+                        depthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.DepthFail),
+                        passOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Pass)
                     },
-                    StencilReadMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilReadMask : 0u,
-                    StencilWriteMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilWriteMask : 0u,
+                    stencilReadMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilReadMask : 0u,
+                    stencilWriteMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilWriteMask : 0u,
                 };
             }
 
@@ -101,10 +97,10 @@ namespace Veldrid.WGPU
                 {
                     var spec = description.ShaderSet.Specializations[i];
 
-                    constants[i] = new ConstantEntry
+                    constants[i] = new WGPUConstantEntry
                     {
-                        Key = (byte*)&spec.ID,
-                        Value = spec.Data
+                        key = (sbyte*)&spec.ID,
+                        value = spec.Data
                     };
                 }
             }
@@ -120,22 +116,22 @@ namespace Veldrid.WGPU
                 {
                     var attrib = layout.Elements[j];
 
-                    vertexAttributes[j] = new VertexAttribute
+                    vertexAttributes[j] = new WGPUVertexAttribute
                     {
-                        Format = WGPUFormats.VdToWGPUVertexFormat(attrib.Format),
-                        Offset = attrib.Offset != 0 ? attrib.Offset : currentOffset,
-                        ShaderLocation = (uint)(attribGroupStartIndex + j)
+                        format = WGPUFormats.VdToWGPUVertexFormat(attrib.Format),
+                        offset = attrib.Offset != 0 ? attrib.Offset : currentOffset,
+                        shaderLocation = (uint)(attribGroupStartIndex + j)
                     };
 
                     currentOffset += FormatSizeHelpers.GetSizeInBytes(attrib.Format);
                 }
 
-                vertexBufferLayouts[i] = new VertexBufferLayout
+                vertexBufferLayouts[i] = new WGPUVertexBufferLayout
                 {
-                    ArrayStride = layout.Stride,
-                    StepMode = layout.InstanceStepRate != 0 ? VertexStepMode.Instance : VertexStepMode.Vertex,
-                    AttributeCount = (uint)layout.Elements.Length,
-                    Attributes = &vertexAttributes[attribGroupStartIndex]
+                    arrayStride = layout.Stride,
+                    stepMode = layout.InstanceStepRate != 0 ? WGPUVertexStepMode.Instance : WGPUVertexStepMode.Vertex,
+                    attributeCount = (uint)layout.Elements.Length,
+                    attributes = &vertexAttributes[attribGroupStartIndex]
                 };
 
                 attribGroupStartIndex += layout.Elements.Length;
@@ -147,56 +143,62 @@ namespace Veldrid.WGPU
                 bindGroups[i] = layout.Layout;
             }
 
-            fragmentState[0] = new FragmentState
+            fixed (sbyte* vertexEntryPointPtr = vertexShader.EntryPoint.GetUtf8Span())
+            fixed (sbyte* fragmentEntryPointPtr = fragmentShader.EntryPoint.GetUtf8Span())
             {
-                Module = fragmentShader.Module,
-                EntryPoint = new FixedUtf8String(fragmentShader.EntryPoint),
-                ConstantCount = (uint)(description.ShaderSet.Specializations?.Length ?? 0),
-                Constants = constants,
-                TargetCount = (uint)description.BlendState.AttachmentStates.Length,
-                Targets = targets
-            };
+                fragmentState[0] = new WGPUFragmentState
+                {
+                    module = fragmentShader.Module,
+                    entryPoint = fragmentEntryPointPtr,
+                    constantCount = (uint)(description.ShaderSet.Specializations?.Length ?? 0),
+                    constants = constants,
+                    targetCount = (uint)description.BlendState.AttachmentStates.Length,
+                    targets = targets
+                };
 
-            Layout = gd.WebGPU.DeviceCreatePipelineLayout(gd.NativeDevice, new PipelineLayoutDescriptor
-            {
-                BindGroupLayoutCount = (uint)description.ResourceLayouts.Length,
-                BindGroupLayouts = bindGroups
-            });
+                WGPUPipelineLayoutDescriptor pipelineLayoutDesc = new WGPUPipelineLayoutDescriptor
+                {
+                    bindGroupLayoutCount = (uint)description.ResourceLayouts.Length,
+                    bindGroupLayouts = bindGroups
+                };
 
-            RenderPipeline = gd.WebGPU.DeviceCreateRenderPipeline(gd.NativeDevice, new RenderPipelineDescriptor
-            {
-                Layout = Layout,
-                Vertex = new VertexState
+                Layout = wgpuDeviceCreatePipelineLayout(gd.NativeDevice, &pipelineLayoutDesc);
+
+                WGPURenderPipelineDescriptor renderPipelineDesc = new WGPURenderPipelineDescriptor
                 {
-                    Module = vertexShader.Module,
-                    EntryPoint = new FixedUtf8String(vertexShader.EntryPoint),
-                    ConstantCount = (uint)(description.ShaderSet.Specializations?.Length ?? 0),
-                    Constants = constants,
-                    BufferCount = (uint)description.ShaderSet.VertexLayouts.Length,
-                    Buffers = vertexBufferLayouts
-                },
-                Primitive = new PrimitiveState
-                {
-                    Topology = WGPUFormats.VdToWGPUPrimitiveTopology(description.PrimitiveTopology),
-                    FrontFace = WGPUFormats.VdToWGPUFrontFace(description.RasterizerState.FrontFace),
-                    CullMode = WGPUFormats.VdToWGPUCullMode(description.RasterizerState.CullMode),
-                },
-                DepthStencil = depthStencilState,
-                Multisample = new MultisampleState
-                {
-                    Count = WGPUFormats.VdToWGPUSampleCount(description.Outputs.SampleCount),
-                    Mask = ~0u,
-                    AlphaToCoverageEnabled = description.BlendState.AlphaToCoverageEnabled
-                },
-                Fragment = fragmentState
-            });
+                    layout = Layout,
+                    vertex = new WGPUVertexState
+                    {
+                        module = vertexShader.Module,
+                        entryPoint = vertexEntryPointPtr,
+                        constantCount = (uint)(description.ShaderSet.Specializations?.Length ?? 0),
+                        constants = constants,
+                        bufferCount = (uint)description.ShaderSet.VertexLayouts.Length,
+                        buffers = vertexBufferLayouts
+                    },
+                    primitive = new WGPUPrimitiveState
+                    {
+                        topology = WGPUFormats.VdToWGPUPrimitiveTopology(description.PrimitiveTopology),
+                        frontFace = WGPUFormats.VdToWGPUFrontFace(description.RasterizerState.FrontFace),
+                        cullMode = WGPUFormats.VdToWGPUCullMode(description.RasterizerState.CullMode),
+                    },
+                    depthStencil = depthStencilState,
+                    multisample = new WGPUMultisampleState
+                    {
+                        count = WGPUFormats.VdToWGPUSampleCount(description.Outputs.SampleCount),
+                        mask = ~0u,
+                        alphaToCoverageEnabled = description.BlendState.AlphaToCoverageEnabled
+                    },
+                    fragment = fragmentState
+                };
+
+                RenderPipeline = wgpuDeviceCreateRenderPipeline(gd.NativeDevice, &renderPipelineDesc);
+            }
         }
 
         public WGPUPipeline(WGPUGraphicsDevice gd, ref ComputePipelineDescription description)
             : base(ref description)
         {
-            this.gd = gd;
-
             IsComputePipeline = true;
         }
 
@@ -205,11 +207,11 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (Layout != null)
-                gd.WebGPU.PipelineLayoutRelease(Layout);
+            if (Layout.IsNotNull)
+                wgpuPipelineLayoutRelease(Layout);
 
-            if (RenderPipeline != null)
-                gd.WebGPU.RenderPipelineRelease(RenderPipeline);
+            if (RenderPipeline.IsNotNull)
+                wgpuRenderPipelineRelease(RenderPipeline);
 
             isDisposed = true;
         }

@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -12,7 +13,7 @@ namespace Veldrid.WGPU
 
         private readonly WGPUGraphicsDevice gd;
 
-        private Silk.NET.WebGPU.TextureView* view;
+        private WebGPU.WGPUTextureView view;
 
         private bool isDisposed;
 
@@ -22,31 +23,31 @@ namespace Veldrid.WGPU
             this.gd = gd;
         }
 
-        public override Silk.NET.WebGPU.TextureView* View
+        public override WebGPU.WGPUTextureView View
         {
             get
             {
-                if (view != null)
+                if (view.IsNotNull)
                     return view;
 
-                SurfaceTexture surfaceTexture = default;
-                gd.WebGPU.SurfaceGetCurrentTexture(gd.NativeSurface, ref surfaceTexture);
+                WGPUSurfaceTexture surfaceTexture;
+                wgpuSurfaceGetCurrentTexture(gd.NativeSurface, &surfaceTexture);
 
-                if (surfaceTexture.Status != SurfaceGetCurrentTextureStatus.Success)
+                if (surfaceTexture.status != WGPUSurfaceGetCurrentTextureStatus.Success)
                 {
                     // Todo:
                 }
 
-                return view = gd.WebGPU.TextureCreateView(surfaceTexture.Texture, null);
+                return view = wgpuTextureCreateView(surfaceTexture.texture, null);
             }
         }
 
         public void Release()
         {
-            if (view != null)
-                gd.WebGPU.TextureViewRelease(view);
+            if (view.IsNotNull)
+                wgpuTextureViewRelease(view);
 
-            view = null;
+            view = default;
         }
 
         public override void Dispose()

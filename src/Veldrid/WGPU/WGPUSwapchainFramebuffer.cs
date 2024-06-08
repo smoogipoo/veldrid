@@ -2,7 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Collections.Generic;
-using Silk.NET.WebGPU;
+using WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -22,7 +22,7 @@ namespace Veldrid.WGPU
         public override uint Height => height;
 
         private readonly WGPUGraphicsDevice gd;
-        private readonly TextureFormat colorFormat;
+        private readonly WGPUTextureFormat colorFormat;
         private readonly PixelFormat? depthFormat;
 
         private FramebufferAttachment[] colorTargets;
@@ -34,7 +34,7 @@ namespace Veldrid.WGPU
 
         private bool isDisposed;
 
-        public WGPUSwapchainFramebuffer(WGPUGraphicsDevice gd, TextureFormat colorFormat, PixelFormat? depthFormat)
+        public WGPUSwapchainFramebuffer(WGPUGraphicsDevice gd, WGPUTextureFormat colorFormat, PixelFormat? depthFormat)
         {
             this.gd = gd;
             this.colorFormat = colorFormat;

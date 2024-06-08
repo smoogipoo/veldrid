@@ -8,14 +8,11 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        private readonly WGPUGraphicsDevice gd;
-
         private bool isDisposed;
 
         public WGPUFramebuffer(WGPUGraphicsDevice gd, ref FramebufferDescription description)
             : base(ref description)
         {
-            this.gd = gd;
         }
 
         public override void Dispose()

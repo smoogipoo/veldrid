@@ -3,28 +3,28 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Silk.NET.WebGPU;
+using WebGPU;
 
 namespace Veldrid.WGPU
 {
     internal static class WGPUFormats
     {
-        public static AddressMode VdToWGPUAddressMode(SamplerAddressMode mode)
+        public static WGPUAddressMode VdToWGPUAddressMode(SamplerAddressMode mode)
         {
             switch (mode)
             {
                 case SamplerAddressMode.Wrap:
-                    return AddressMode.Repeat;
+                    return WGPUAddressMode.Repeat;
 
                 case SamplerAddressMode.Mirror:
-                    return AddressMode.MirrorRepeat;
+                    return WGPUAddressMode.MirrorRepeat;
 
                 case SamplerAddressMode.Clamp:
-                    return AddressMode.ClampToEdge;
+                    return WGPUAddressMode.ClampToEdge;
 
                 case SamplerAddressMode.Border:
                     // Not supported right now.
-                    return AddressMode.ClampToEdge;
+                    return WGPUAddressMode.ClampToEdge;
 
                 default:
                     throw Illegal.Value<SamplerAddressMode>();
@@ -33,64 +33,64 @@ namespace Veldrid.WGPU
 
         public static void GetFilterParams(
             SamplerFilter filter,
-            out FilterMode minFilter,
-            out FilterMode magFilter,
-            out MipmapFilterMode mipmapFilter)
+            out WGPUFilterMode minFilter,
+            out WGPUFilterMode magFilter,
+            out WGPUMipmapFilterMode mipmapFilter)
         {
             switch (filter)
             {
                 case SamplerFilter.Anisotropic:
-                    minFilter = FilterMode.Linear;
-                    magFilter = FilterMode.Linear;
-                    mipmapFilter = MipmapFilterMode.Linear;
+                    minFilter = WGPUFilterMode.Linear;
+                    magFilter = WGPUFilterMode.Linear;
+                    mipmapFilter = WGPUMipmapFilterMode.Linear;
                     break;
 
                 case SamplerFilter.MinPointMagPointMipPoint:
-                    minFilter = FilterMode.Nearest;
-                    magFilter = FilterMode.Nearest;
-                    mipmapFilter = MipmapFilterMode.Nearest;
+                    minFilter = WGPUFilterMode.Nearest;
+                    magFilter = WGPUFilterMode.Nearest;
+                    mipmapFilter = WGPUMipmapFilterMode.Nearest;
                     break;
 
                 case SamplerFilter.MinPointMagPointMipLinear:
-                    minFilter = FilterMode.Nearest;
-                    magFilter = FilterMode.Nearest;
-                    mipmapFilter = MipmapFilterMode.Linear;
+                    minFilter = WGPUFilterMode.Nearest;
+                    magFilter = WGPUFilterMode.Nearest;
+                    mipmapFilter = WGPUMipmapFilterMode.Linear;
                     break;
 
                 case SamplerFilter.MinPointMagLinearMipPoint:
-                    minFilter = FilterMode.Nearest;
-                    magFilter = FilterMode.Linear;
-                    mipmapFilter = MipmapFilterMode.Nearest;
+                    minFilter = WGPUFilterMode.Nearest;
+                    magFilter = WGPUFilterMode.Linear;
+                    mipmapFilter = WGPUMipmapFilterMode.Nearest;
                     break;
 
                 case SamplerFilter.MinPointMagLinearMipLinear:
-                    minFilter = FilterMode.Nearest;
-                    magFilter = FilterMode.Linear;
-                    mipmapFilter = MipmapFilterMode.Linear;
+                    minFilter = WGPUFilterMode.Nearest;
+                    magFilter = WGPUFilterMode.Linear;
+                    mipmapFilter = WGPUMipmapFilterMode.Linear;
                     break;
 
                 case SamplerFilter.MinLinearMagPointMipPoint:
-                    minFilter = FilterMode.Linear;
-                    magFilter = FilterMode.Nearest;
-                    mipmapFilter = MipmapFilterMode.Nearest;
+                    minFilter = WGPUFilterMode.Linear;
+                    magFilter = WGPUFilterMode.Nearest;
+                    mipmapFilter = WGPUMipmapFilterMode.Nearest;
                     break;
 
                 case SamplerFilter.MinLinearMagPointMipLinear:
-                    minFilter = FilterMode.Linear;
-                    magFilter = FilterMode.Nearest;
-                    mipmapFilter = MipmapFilterMode.Linear;
+                    minFilter = WGPUFilterMode.Linear;
+                    magFilter = WGPUFilterMode.Nearest;
+                    mipmapFilter = WGPUMipmapFilterMode.Linear;
                     break;
 
                 case SamplerFilter.MinLinearMagLinearMipPoint:
-                    minFilter = FilterMode.Linear;
-                    magFilter = FilterMode.Linear;
-                    mipmapFilter = MipmapFilterMode.Nearest;
+                    minFilter = WGPUFilterMode.Linear;
+                    magFilter = WGPUFilterMode.Linear;
+                    mipmapFilter = WGPUMipmapFilterMode.Nearest;
                     break;
 
                 case SamplerFilter.MinLinearMagLinearMipLinear:
-                    minFilter = FilterMode.Linear;
-                    magFilter = FilterMode.Linear;
-                    mipmapFilter = MipmapFilterMode.Linear;
+                    minFilter = WGPUFilterMode.Linear;
+                    magFilter = WGPUFilterMode.Linear;
+                    mipmapFilter = WGPUMipmapFilterMode.Linear;
                     break;
 
                 default:
@@ -98,33 +98,33 @@ namespace Veldrid.WGPU
             }
         }
 
-        public static CompareFunction VdToWGPUCompareFunction(ComparisonKind comparisonKind)
+        public static WGPUCompareFunction VdToWGPUCompareFunction(ComparisonKind comparisonKind)
         {
             switch (comparisonKind)
             {
                 case ComparisonKind.Never:
-                    return CompareFunction.Never;
+                    return WGPUCompareFunction.Never;
 
                 case ComparisonKind.Less:
-                    return CompareFunction.Less;
+                    return WGPUCompareFunction.Less;
 
                 case ComparisonKind.Equal:
-                    return CompareFunction.Equal;
+                    return WGPUCompareFunction.Equal;
 
                 case ComparisonKind.LessEqual:
-                    return CompareFunction.LessEqual;
+                    return WGPUCompareFunction.LessEqual;
 
                 case ComparisonKind.Greater:
-                    return CompareFunction.Greater;
+                    return WGPUCompareFunction.Greater;
 
                 case ComparisonKind.NotEqual:
-                    return CompareFunction.NotEqual;
+                    return WGPUCompareFunction.NotEqual;
 
                 case ComparisonKind.GreaterEqual:
-                    return CompareFunction.GreaterEqual;
+                    return WGPUCompareFunction.GreaterEqual;
 
                 case ComparisonKind.Always:
-                    return CompareFunction.Always;
+                    return WGPUCompareFunction.Always;
 
                 default:
                     throw Illegal.Value<ComparisonKind>();
@@ -158,194 +158,194 @@ namespace Veldrid.WGPU
             }
         }
 
-        public static Silk.NET.WebGPU.TextureUsage VdToWGPUTextureUsage(TextureUsage usage)
+        public static WGPUTextureUsage VdToWGPUTextureUsage(TextureUsage usage)
         {
-            var wgpuUsage = Silk.NET.WebGPU.TextureUsage.CopyDst | Silk.NET.WebGPU.TextureUsage.CopySrc;
+            var wgpuUsage = WGPUTextureUsage.CopyDst | WGPUTextureUsage.CopySrc;
 
             if ((usage & TextureUsage.Sampled) == TextureUsage.Sampled)
-                wgpuUsage |= Silk.NET.WebGPU.TextureUsage.TextureBinding;
+                wgpuUsage |= WGPUTextureUsage.TextureBinding;
 
             if ((usage & TextureUsage.RenderTarget) == TextureUsage.RenderTarget)
-                wgpuUsage |= Silk.NET.WebGPU.TextureUsage.RenderAttachment;
+                wgpuUsage |= WGPUTextureUsage.RenderAttachment;
 
             if ((usage & TextureUsage.Storage) == TextureUsage.Storage)
-                wgpuUsage |= Silk.NET.WebGPU.TextureUsage.StorageBinding;
+                wgpuUsage |= WGPUTextureUsage.StorageBinding;
 
             return wgpuUsage;
         }
 
-        public static TextureFormat VdToWGPUTextureFormat(PixelFormat format, bool toDepthFormat = true)
+        public static WGPUTextureFormat VdToWGPUTextureFormat(PixelFormat format, bool toDepthFormat = true)
         {
             switch (format)
             {
                 case PixelFormat.R8G8B8A8UNorm:
-                    return TextureFormat.Rgba8Unorm;
+                    return WGPUTextureFormat.RGBA8Unorm;
 
                 case PixelFormat.B8G8R8A8UNorm:
-                    return TextureFormat.Bgra8Unorm;
+                    return WGPUTextureFormat.BGRA8Unorm;
 
                 case PixelFormat.R8UNorm:
-                    return TextureFormat.R8Unorm;
+                    return WGPUTextureFormat.R8Unorm;
 
                 case PixelFormat.R32G32B32A32Float:
-                    return TextureFormat.Rgba32float;
+                    return WGPUTextureFormat.RGBA32Float;
 
                 case PixelFormat.R32Float:
-                    return toDepthFormat ? TextureFormat.Depth32float : TextureFormat.R32float;
+                    return toDepthFormat ? WGPUTextureFormat.Depth32Float : WGPUTextureFormat.R32Float;
 
                 case PixelFormat.Bc3UNorm:
-                    return TextureFormat.BC3RgbaUnorm;
+                    return WGPUTextureFormat.BC3RGBAUnorm;
 
                 case PixelFormat.D24UNormS8UInt:
-                    return TextureFormat.Depth24PlusStencil8;
+                    return WGPUTextureFormat.Depth24PlusStencil8;
 
                 case PixelFormat.D32FloatS8UInt:
-                    return TextureFormat.Depth32floatStencil8;
+                    return WGPUTextureFormat.Depth32FloatStencil8;
 
                 case PixelFormat.R32G32B32A32UInt:
-                    return TextureFormat.Rgba32Uint;
+                    return WGPUTextureFormat.RGBA32Uint;
 
                 case PixelFormat.R8G8SNorm:
-                    return TextureFormat.RG8Snorm;
+                    return WGPUTextureFormat.RG8Snorm;
 
                 case PixelFormat.Bc1RgbUNorm:
                     throw Illegal.Value<PixelFormat>();
 
                 case PixelFormat.Bc1RgbaUNorm:
-                    return TextureFormat.BC1RgbaUnorm;
+                    return WGPUTextureFormat.BC1RGBAUnorm;
 
                 case PixelFormat.Bc2UNorm:
-                    return TextureFormat.BC2RgbaUnorm;
+                    return WGPUTextureFormat.BC2RGBAUnorm;
 
                 case PixelFormat.R10G10B10A2UNorm:
-                    return TextureFormat.Rgb10A2Unorm;
+                    return WGPUTextureFormat.RGB10A2Unorm;
 
                 case PixelFormat.R10G10B10A2UInt:
                     // Supported from 2.21.0 onwards.
-                    // return TextureFormat.Rgb10A2Uint;
+                    // return WGPUTextureFormat.RGB10A2Uint;
                     throw Illegal.Value<PixelFormat>();
 
                 case PixelFormat.R11G11B10Float:
-                    return TextureFormat.RG11B10Ufloat;
+                    return WGPUTextureFormat.RG11B10Ufloat;
 
                 case PixelFormat.R8SNorm:
-                    return TextureFormat.R8Snorm;
+                    return WGPUTextureFormat.R8Snorm;
 
                 case PixelFormat.R8UInt:
-                    return TextureFormat.R8Uint;
+                    return WGPUTextureFormat.R8Uint;
 
                 case PixelFormat.R8SInt:
-                    return TextureFormat.R8Sint;
+                    return WGPUTextureFormat.R8Sint;
 
                 case PixelFormat.R16UInt:
-                    return TextureFormat.R16Uint;
+                    return WGPUTextureFormat.R16Uint;
 
                 case PixelFormat.R16SInt:
-                    return TextureFormat.R16Sint;
+                    return WGPUTextureFormat.R16Sint;
 
                 case PixelFormat.R16Float:
-                    return TextureFormat.R16float;
+                    return WGPUTextureFormat.R16Float;
 
                 case PixelFormat.R32UInt:
-                    return TextureFormat.R32Uint;
+                    return WGPUTextureFormat.R32Uint;
 
                 case PixelFormat.R32SInt:
-                    return TextureFormat.R32Sint;
+                    return WGPUTextureFormat.R32Sint;
 
                 case PixelFormat.R8G8UNorm:
-                    return TextureFormat.RG8Unorm;
+                    return WGPUTextureFormat.RG8Unorm;
 
                 case PixelFormat.R8G8UInt:
-                    return TextureFormat.RG8Uint;
+                    return WGPUTextureFormat.RG8Uint;
 
                 case PixelFormat.R8G8SInt:
-                    return TextureFormat.RG8Sint;
+                    return WGPUTextureFormat.RG8Sint;
 
                 case PixelFormat.R16G16UInt:
-                    return TextureFormat.RG16Uint;
+                    return WGPUTextureFormat.RG16Uint;
 
                 case PixelFormat.R16G16SInt:
-                    return TextureFormat.RG16Sint;
+                    return WGPUTextureFormat.RG16Sint;
 
                 case PixelFormat.R16G16Float:
-                    return TextureFormat.RG16float;
+                    return WGPUTextureFormat.RG16Float;
 
                 case PixelFormat.R32G32UInt:
-                    return TextureFormat.RG32Uint;
+                    return WGPUTextureFormat.RG32Uint;
 
                 case PixelFormat.R32G32SInt:
-                    return TextureFormat.RG32Sint;
+                    return WGPUTextureFormat.RG32Sint;
 
                 case PixelFormat.R32G32Float:
-                    return TextureFormat.RG32float;
+                    return WGPUTextureFormat.RG32Float;
 
                 case PixelFormat.R8G8B8A8SNorm:
-                    return TextureFormat.Rgba8Snorm;
+                    return WGPUTextureFormat.RGBA8Snorm;
 
                 case PixelFormat.R8G8B8A8UInt:
-                    return TextureFormat.Rgba8Uint;
+                    return WGPUTextureFormat.RGBA8Uint;
 
                 case PixelFormat.R8G8B8A8SInt:
-                    return TextureFormat.Rgba8Sint;
+                    return WGPUTextureFormat.RGBA8Sint;
 
                 case PixelFormat.R16G16B16A16UInt:
-                    return TextureFormat.Rgba16Uint;
+                    return WGPUTextureFormat.RGBA16Uint;
 
                 case PixelFormat.R16G16B16A16SInt:
-                    return TextureFormat.Rgba16Sint;
+                    return WGPUTextureFormat.RGBA16Sint;
 
                 case PixelFormat.R16G16B16A16Float:
-                    return TextureFormat.Rgba16float;
+                    return WGPUTextureFormat.RGBA16Float;
 
                 case PixelFormat.R32G32B32A32SInt:
-                    return TextureFormat.Rgba32Sint;
+                    return WGPUTextureFormat.RGBA32Sint;
 
                 case PixelFormat.Etc2R8G8B8UNorm:
-                    return TextureFormat.Etc2Rgb8Unorm;
+                    return WGPUTextureFormat.ETC2RGB8Unorm;
 
                 case PixelFormat.Etc2R8G8B8A1UNorm:
-                    return TextureFormat.Etc2Rgb8A1Unorm;
+                    return WGPUTextureFormat.ETC2RGB8A1Unorm;
 
                 case PixelFormat.Etc2R8G8B8A8UNorm:
-                    return TextureFormat.Etc2Rgba8Unorm;
+                    return WGPUTextureFormat.ETC2RGBA8Unorm;
 
                 case PixelFormat.Bc4UNorm:
-                    return TextureFormat.BC4RUnorm;
+                    return WGPUTextureFormat.BC4RUnorm;
 
                 case PixelFormat.Bc4SNorm:
-                    return TextureFormat.BC4RSnorm;
+                    return WGPUTextureFormat.BC4RSnorm;
 
                 case PixelFormat.Bc5UNorm:
-                    return TextureFormat.BC5RGUnorm;
+                    return WGPUTextureFormat.BC5RGUnorm;
 
                 case PixelFormat.Bc5SNorm:
-                    return TextureFormat.BC5RGSnorm;
+                    return WGPUTextureFormat.BC5RGSnorm;
 
                 case PixelFormat.Bc7UNorm:
-                    return TextureFormat.BC7RgbaUnorm;
+                    return WGPUTextureFormat.BC7RGBAUnorm;
 
                 case PixelFormat.R8G8B8A8UNormSRgb:
-                    return TextureFormat.Rgba8UnormSrgb;
+                    return WGPUTextureFormat.RGBA8UnormSrgb;
 
                 case PixelFormat.B8G8R8A8UNormSRgb:
-                    return TextureFormat.Bgra8UnormSrgb;
+                    return WGPUTextureFormat.BGRA8UnormSrgb;
 
                 case PixelFormat.Bc1RgbUNormSRgb:
                 case PixelFormat.Bc1RgbaUNormSRgb:
-                    return TextureFormat.BC1RgbaUnormSrgb;
+                    return WGPUTextureFormat.BC1RGBAUnormSrgb;
 
                 case PixelFormat.Bc2UNormSRgb:
-                    return TextureFormat.BC2RgbaUnormSrgb;
+                    return WGPUTextureFormat.BC2RGBAUnormSrgb;
 
                 case PixelFormat.Bc3UNormSRgb:
-                    return TextureFormat.BC3RgbaUnormSrgb;
+                    return WGPUTextureFormat.BC3RGBAUnormSrgb;
 
                 case PixelFormat.Bc7UNormSRgb:
-                    return TextureFormat.BC7RgbaUnormSrgb;
+                    return WGPUTextureFormat.BC7RGBAUnormSrgb;
 
                 // R16 norm values (non-depth) are only supported by the TEXTURE_FORMAT_16BIT_NORM extension.
                 case PixelFormat.R16UNorm:
-                    return toDepthFormat ? TextureFormat.Depth16Unorm : throw Illegal.Value<PixelFormat>();
+                    return toDepthFormat ? WGPUTextureFormat.Depth16Unorm : throw Illegal.Value<PixelFormat>();
 
                 case PixelFormat.R16SNorm:
                 case PixelFormat.R16G16UNorm:
@@ -357,491 +357,491 @@ namespace Veldrid.WGPU
             }
         }
 
-        public static PixelFormat WGPUToVdPixelFormat(TextureFormat format)
+        public static PixelFormat WGPUToVdPixelFormat(WGPUTextureFormat format)
         {
             switch (format)
             {
-                case TextureFormat.Rgba8Unorm:
+                case WGPUTextureFormat.RGBA8Unorm:
                     return PixelFormat.R8G8B8A8UNorm;
 
-                case TextureFormat.Bgra8Unorm:
+                case WGPUTextureFormat.BGRA8Unorm:
                     return PixelFormat.B8G8R8A8UNorm;
 
-                case TextureFormat.R8Unorm:
+                case WGPUTextureFormat.R8Unorm:
                     return PixelFormat.R8UNorm;
 
-                case TextureFormat.Rgba32float:
+                case WGPUTextureFormat.RGBA32Float:
                     return PixelFormat.R32G32B32A32Float;
 
-                case TextureFormat.Depth32float:
-                case TextureFormat.R32float:
+                case WGPUTextureFormat.Depth32Float:
+                case WGPUTextureFormat.R32Float:
                     return PixelFormat.R32Float;
 
-                case TextureFormat.BC3RgbaUnorm:
+                case WGPUTextureFormat.BC3RGBAUnorm:
                     return PixelFormat.Bc3UNorm;
 
-                case TextureFormat.Depth24PlusStencil8:
+                case WGPUTextureFormat.Depth24PlusStencil8:
                     return PixelFormat.D24UNormS8UInt;
 
-                case TextureFormat.Depth32floatStencil8:
+                case WGPUTextureFormat.Depth32FloatStencil8:
                     return PixelFormat.D32FloatS8UInt;
 
-                case TextureFormat.Rgba32Uint:
+                case WGPUTextureFormat.RGBA32Uint:
                     return PixelFormat.R32G32B32A32UInt;
 
-                case TextureFormat.RG8Snorm:
+                case WGPUTextureFormat.RG8Snorm:
                     return PixelFormat.R8G8SNorm;
 
-                case TextureFormat.Rgba8Snorm:
+                case WGPUTextureFormat.RGBA8Snorm:
                     return PixelFormat.R8G8B8A8SNorm;
 
-                case TextureFormat.Rgba8Uint:
+                case WGPUTextureFormat.RGBA8Uint:
                     return PixelFormat.R8G8B8A8UInt;
 
-                case TextureFormat.Rgba8Sint:
+                case WGPUTextureFormat.RGBA8Sint:
                     return PixelFormat.R8G8B8A8SInt;
 
-                case TextureFormat.Rgba16Uint:
+                case WGPUTextureFormat.RGBA16Uint:
                     return PixelFormat.R16G16B16A16UInt;
 
-                case TextureFormat.Rgba16Sint:
+                case WGPUTextureFormat.RGBA16Sint:
                     return PixelFormat.R16G16B16A16SInt;
 
-                case TextureFormat.Rgba16float:
+                case WGPUTextureFormat.RGBA16Float:
                     return PixelFormat.R16G16B16A16Float;
 
-                case TextureFormat.Rgba32Sint:
+                case WGPUTextureFormat.RGBA32Sint:
                     return PixelFormat.R32G32B32A32SInt;
 
-                case TextureFormat.Etc2Rgb8Unorm:
+                case WGPUTextureFormat.ETC2RGB8Unorm:
                     return PixelFormat.Etc2R8G8B8UNorm;
 
-                case TextureFormat.Etc2Rgb8A1Unorm:
+                case WGPUTextureFormat.ETC2RGB8A1Unorm:
                     return PixelFormat.Etc2R8G8B8A1UNorm;
 
-                case TextureFormat.Etc2Rgba8Unorm:
+                case WGPUTextureFormat.ETC2RGBA8Unorm:
                     return PixelFormat.Etc2R8G8B8A8UNorm;
 
-                case TextureFormat.BC4RUnorm:
+                case WGPUTextureFormat.BC4RUnorm:
                     return PixelFormat.Bc4UNorm;
 
-                case TextureFormat.BC4RSnorm:
+                case WGPUTextureFormat.BC4RSnorm:
                     return PixelFormat.Bc4SNorm;
 
-                case TextureFormat.BC5RGUnorm:
+                case WGPUTextureFormat.BC5RGUnorm:
                     return PixelFormat.Bc5UNorm;
 
-                case TextureFormat.BC5RGSnorm:
+                case WGPUTextureFormat.BC5RGSnorm:
                     return PixelFormat.Bc5SNorm;
 
-                case TextureFormat.BC7RgbaUnorm:
+                case WGPUTextureFormat.BC7RGBAUnorm:
                     return PixelFormat.Bc7UNorm;
 
-                case TextureFormat.Rgba8UnormSrgb:
+                case WGPUTextureFormat.RGBA8UnormSrgb:
                     return PixelFormat.R8G8B8A8UNormSRgb;
 
-                case TextureFormat.Bgra8UnormSrgb:
+                case WGPUTextureFormat.BGRA8UnormSrgb:
                     return PixelFormat.B8G8R8A8UNormSRgb;
 
-                case TextureFormat.BC1RgbaUnorm:
+                case WGPUTextureFormat.BC1RGBAUnorm:
                     return PixelFormat.Bc1RgbaUNorm;
 
-                case TextureFormat.R8Snorm:
+                case WGPUTextureFormat.R8Snorm:
                     return PixelFormat.R8SNorm;
 
-                case TextureFormat.R8Uint:
+                case WGPUTextureFormat.R8Uint:
                     return PixelFormat.R8UInt;
 
-                case TextureFormat.R8Sint:
+                case WGPUTextureFormat.R8Sint:
                     return PixelFormat.R8SInt;
 
-                case TextureFormat.R16Uint:
+                case WGPUTextureFormat.R16Uint:
                     return PixelFormat.R16UInt;
 
-                case TextureFormat.R16Sint:
+                case WGPUTextureFormat.R16Sint:
                     return PixelFormat.R16SInt;
 
-                case TextureFormat.R32Uint:
+                case WGPUTextureFormat.R32Uint:
                     return PixelFormat.R32UInt;
 
-                case TextureFormat.R32Sint:
+                case WGPUTextureFormat.R32Sint:
                     return PixelFormat.R32SInt;
 
-                case TextureFormat.RG8Unorm:
+                case WGPUTextureFormat.RG8Unorm:
                     return PixelFormat.R8G8UNorm;
 
-                case TextureFormat.RG8Uint:
+                case WGPUTextureFormat.RG8Uint:
                     return PixelFormat.R8G8UInt;
 
-                case TextureFormat.RG8Sint:
+                case WGPUTextureFormat.RG8Sint:
                     return PixelFormat.R8G8SInt;
 
-                case TextureFormat.RG16Uint:
+                case WGPUTextureFormat.RG16Uint:
                     return PixelFormat.R16G16UInt;
 
-                case TextureFormat.RG16Sint:
+                case WGPUTextureFormat.RG16Sint:
                     return PixelFormat.R16G16SInt;
 
-                case TextureFormat.RG16float:
+                case WGPUTextureFormat.RG16Float:
                     return PixelFormat.R16G16Float;
 
-                case TextureFormat.RG32Uint:
+                case WGPUTextureFormat.RG32Uint:
                     return PixelFormat.R32G32UInt;
 
-                case TextureFormat.RG32Sint:
+                case WGPUTextureFormat.RG32Sint:
                     return PixelFormat.R32G32SInt;
 
-                case TextureFormat.RG32float:
+                case WGPUTextureFormat.RG32Float:
                     return PixelFormat.R32G32Float;
 
-                case TextureFormat.BC1RgbaUnormSrgb:
-                case TextureFormat.BC2RgbaUnormSrgb:
+                case WGPUTextureFormat.BC1RGBAUnormSrgb:
+                case WGPUTextureFormat.BC2RGBAUnormSrgb:
                     return PixelFormat.Bc1RgbaUNormSRgb;
 
-                case TextureFormat.BC3RgbaUnormSrgb:
+                case WGPUTextureFormat.BC3RGBAUnormSrgb:
                     return PixelFormat.Bc3UNormSRgb;
 
-                case TextureFormat.BC7RgbaUnormSrgb:
+                case WGPUTextureFormat.BC7RGBAUnormSrgb:
                     return PixelFormat.Bc7UNormSRgb;
 
-                case TextureFormat.R16float:
+                case WGPUTextureFormat.R16Float:
                     return PixelFormat.R16Float;
 
-                case TextureFormat.Depth16Unorm:
+                case WGPUTextureFormat.Depth16Unorm:
                     return PixelFormat.R16UNorm;
 
                 default:
-                    throw Illegal.Value<TextureFormat>();
+                    throw Illegal.Value<WGPUTextureFormat>();
             }
         }
 
-        public static TextureDimension VdToWGPUTextureDimention(uint depth)
+        public static WGPUTextureDimension VdToWGPUTextureDimention(uint depth)
         {
             if (depth == 1)
-                return TextureDimension.Dimension2D;
+                return WGPUTextureDimension._2D;
 
             if (depth > 1)
-                return TextureDimension.Dimension3D;
+                return WGPUTextureDimension._3D;
 
             throw Illegal.Value<uint>();
         }
 
-        public static TextureViewDimension VdToWGPUTextureViewDimention(uint depth)
+        public static WGPUTextureViewDimension VdToWGPUTextureViewDimention(uint depth)
         {
             if (depth == 1)
-                return TextureViewDimension.Dimension2D;
+                return WGPUTextureViewDimension._2D;
 
             if (depth > 1)
-                return TextureViewDimension.Dimension3D;
+                return WGPUTextureViewDimension._3D;
 
             throw Illegal.Value<uint>();
         }
 
-        public static Silk.NET.WebGPU.BufferUsage VdToWGPUBufferUsage(BufferUsage usage)
+        public static WGPUBufferUsage VdToWGPUBufferUsage(BufferUsage usage)
         {
-            var wgpuUsage = Silk.NET.WebGPU.BufferUsage.CopySrc | Silk.NET.WebGPU.BufferUsage.CopyDst;
+            var wgpuUsage = WGPUBufferUsage.CopySrc | WGPUBufferUsage.CopyDst;
 
             if ((usage & BufferUsage.IndexBuffer) == BufferUsage.IndexBuffer)
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Index;
+                wgpuUsage |= WGPUBufferUsage.Index;
 
             if ((usage & BufferUsage.IndirectBuffer) == BufferUsage.IndirectBuffer)
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Indirect;
+                wgpuUsage |= WGPUBufferUsage.Indirect;
 
             if ((usage & BufferUsage.StructuredBufferReadOnly) == BufferUsage.StructuredBufferReadOnly
                 || (usage & BufferUsage.StructuredBufferReadWrite) == BufferUsage.StructuredBufferReadWrite)
             {
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Storage;
+                wgpuUsage |= WGPUBufferUsage.Storage;
             }
 
             if ((usage & BufferUsage.UniformBuffer) == BufferUsage.UniformBuffer)
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Uniform;
+                wgpuUsage |= WGPUBufferUsage.Uniform;
 
             if ((usage & BufferUsage.VertexBuffer) == BufferUsage.VertexBuffer)
-                wgpuUsage |= Silk.NET.WebGPU.BufferUsage.Vertex;
+                wgpuUsage |= WGPUBufferUsage.Vertex;
 
             // if ((usage & BufferUsage.Staging) == BufferUsage.Staging)
-            //     wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapRead | Silk.NET.WebGPU.BufferUsage.MapWrite;
+            //     wgpuUsage |= WGPUBufferUsage.MapRead | WGPUBufferUsage.MapWrite;
             //
             // if ((usage & BufferUsage.Dynamic) == BufferUsage.Dynamic)
-            //     wgpuUsage |= Silk.NET.WebGPU.BufferUsage.MapWrite;
+            //     wgpuUsage |= WGPUBufferUsage.MapWrite;
 
             return wgpuUsage;
         }
 
-        public static Silk.NET.WebGPU.PrimitiveTopology VdToWGPUPrimitiveTopology(PrimitiveTopology topology)
+        public static WGPUPrimitiveTopology VdToWGPUPrimitiveTopology(PrimitiveTopology topology)
         {
             switch (topology)
             {
                 case PrimitiveTopology.TriangleList:
-                    return Silk.NET.WebGPU.PrimitiveTopology.TriangleList;
+                    return WGPUPrimitiveTopology.TriangleList;
 
                 case PrimitiveTopology.TriangleStrip:
-                    return Silk.NET.WebGPU.PrimitiveTopology.TriangleStrip;
+                    return WGPUPrimitiveTopology.TriangleStrip;
 
                 case PrimitiveTopology.LineList:
-                    return Silk.NET.WebGPU.PrimitiveTopology.LineList;
+                    return WGPUPrimitiveTopology.LineList;
 
                 case PrimitiveTopology.LineStrip:
-                    return Silk.NET.WebGPU.PrimitiveTopology.LineStrip;
+                    return WGPUPrimitiveTopology.LineStrip;
 
                 case PrimitiveTopology.PointList:
-                    return Silk.NET.WebGPU.PrimitiveTopology.PointList;
+                    return WGPUPrimitiveTopology.PointList;
 
                 default:
                     throw Illegal.Value<PrimitiveTopology>();
             }
         }
 
-        public static Silk.NET.WebGPU.FrontFace VdToWGPUFrontFace(FrontFace frontFace)
+        public static WGPUFrontFace VdToWGPUFrontFace(FrontFace frontFace)
         {
             switch (frontFace)
             {
                 case FrontFace.Clockwise:
-                    return Silk.NET.WebGPU.FrontFace.CW;
+                    return WGPUFrontFace.CW;
 
                 case FrontFace.CounterClockwise:
-                    return Silk.NET.WebGPU.FrontFace.Ccw;
+                    return WGPUFrontFace.CCW;
 
                 default:
                     throw Illegal.Value<FrontFace>();
             }
         }
 
-        public static CullMode VdToWGPUCullMode(FaceCullMode cullMode)
+        public static WGPUCullMode VdToWGPUCullMode(FaceCullMode cullMode)
         {
             switch (cullMode)
             {
                 case FaceCullMode.None:
-                    return CullMode.None;
+                    return WGPUCullMode.None;
 
                 case FaceCullMode.Front:
-                    return CullMode.Front;
+                    return WGPUCullMode.Front;
 
                 case FaceCullMode.Back:
-                    return CullMode.Back;
+                    return WGPUCullMode.Back;
 
                 default:
                     throw Illegal.Value<FaceCullMode>();
             }
         }
 
-        public static BlendOperation VdToWGPUBlendOperation(BlendFunction function)
+        public static WGPUBlendOperation VdToWGPUBlendOperation(BlendFunction function)
         {
             switch (function)
             {
                 case BlendFunction.Add:
-                    return BlendOperation.Add;
+                    return WGPUBlendOperation.Add;
 
                 case BlendFunction.Subtract:
-                    return BlendOperation.Subtract;
+                    return WGPUBlendOperation.Subtract;
 
                 case BlendFunction.ReverseSubtract:
-                    return BlendOperation.ReverseSubtract;
+                    return WGPUBlendOperation.ReverseSubtract;
 
                 case BlendFunction.Minimum:
-                    return BlendOperation.Min;
+                    return WGPUBlendOperation.Min;
 
                 case BlendFunction.Maximum:
-                    return BlendOperation.Max;
+                    return WGPUBlendOperation.Max;
 
                 default:
                     throw Illegal.Value<BlendFunction>();
             }
         }
 
-        public static Silk.NET.WebGPU.BlendFactor VdToWGPUBlendFactor(BlendFactor factor)
+        public static WGPUBlendFactor VdToWGPUBlendFactor(BlendFactor factor)
         {
             switch (factor)
             {
                 case BlendFactor.Zero:
-                    return Silk.NET.WebGPU.BlendFactor.Zero;
+                    return WGPUBlendFactor.Zero;
 
                 case BlendFactor.One:
-                    return Silk.NET.WebGPU.BlendFactor.One;
+                    return WGPUBlendFactor.One;
 
                 case BlendFactor.SourceAlpha:
-                    return Silk.NET.WebGPU.BlendFactor.SrcAlpha;
+                    return WGPUBlendFactor.SrcAlpha;
 
                 case BlendFactor.InverseSourceAlpha:
-                    return Silk.NET.WebGPU.BlendFactor.OneMinusSrcAlpha;
+                    return WGPUBlendFactor.OneMinusSrcAlpha;
 
                 case BlendFactor.DestinationAlpha:
-                    return Silk.NET.WebGPU.BlendFactor.DstAlpha;
+                    return WGPUBlendFactor.DstAlpha;
 
                 case BlendFactor.InverseDestinationAlpha:
-                    return Silk.NET.WebGPU.BlendFactor.OneMinusDstAlpha;
+                    return WGPUBlendFactor.OneMinusDstAlpha;
 
                 case BlendFactor.SourceColor:
-                    return Silk.NET.WebGPU.BlendFactor.Src;
+                    return WGPUBlendFactor.Src;
 
                 case BlendFactor.InverseSourceColor:
-                    return Silk.NET.WebGPU.BlendFactor.OneMinusSrc;
+                    return WGPUBlendFactor.OneMinusSrc;
 
                 case BlendFactor.DestinationColor:
-                    return Silk.NET.WebGPU.BlendFactor.Dst;
+                    return WGPUBlendFactor.Dst;
 
                 case BlendFactor.InverseDestinationColor:
-                    return Silk.NET.WebGPU.BlendFactor.OneMinusDst;
+                    return WGPUBlendFactor.OneMinusDst;
 
                 case BlendFactor.BlendFactor:
-                    return Silk.NET.WebGPU.BlendFactor.Constant;
+                    return WGPUBlendFactor.Constant;
 
                 case BlendFactor.InverseBlendFactor:
-                    return Silk.NET.WebGPU.BlendFactor.OneMinusConstant;
+                    return WGPUBlendFactor.OneMinusConstant;
 
                 default:
                     throw Illegal.Value<BlendFactor>();
             }
         }
 
-        public static Silk.NET.WebGPU.ColorWriteMask VdToWGPUColorWriteMask(ColorWriteMask mask)
+        public static WGPUColorWriteMask VdToWGPUColorWriteMask(ColorWriteMask mask)
         {
-            var flags = Silk.NET.WebGPU.ColorWriteMask.None;
+            var flags = WGPUColorWriteMask.None;
 
             if ((mask & ColorWriteMask.Red) == ColorWriteMask.Red)
-                flags |= Silk.NET.WebGPU.ColorWriteMask.Red;
+                flags |= WGPUColorWriteMask.Red;
 
             if ((mask & ColorWriteMask.Green) == ColorWriteMask.Green)
-                flags |= Silk.NET.WebGPU.ColorWriteMask.Green;
+                flags |= WGPUColorWriteMask.Green;
 
             if ((mask & ColorWriteMask.Blue) == ColorWriteMask.Blue)
-                flags |= Silk.NET.WebGPU.ColorWriteMask.Blue;
+                flags |= WGPUColorWriteMask.Blue;
 
             if ((mask & ColorWriteMask.Alpha) == ColorWriteMask.Alpha)
-                flags |= Silk.NET.WebGPU.ColorWriteMask.Alpha;
+                flags |= WGPUColorWriteMask.Alpha;
 
             return flags;
         }
 
-        public static Silk.NET.WebGPU.StencilOperation VdToWGPUStencilOperation(StencilOperation operation)
+        public static WGPUStencilOperation VdToWGPUStencilOperation(StencilOperation operation)
         {
             switch (operation)
             {
                 case StencilOperation.Keep:
-                    return Silk.NET.WebGPU.StencilOperation.Keep;
+                    return WGPUStencilOperation.Keep;
 
                 case StencilOperation.Zero:
-                    return Silk.NET.WebGPU.StencilOperation.Zero;
+                    return WGPUStencilOperation.Zero;
 
                 case StencilOperation.Replace:
-                    return Silk.NET.WebGPU.StencilOperation.Replace;
+                    return WGPUStencilOperation.Replace;
 
                 case StencilOperation.IncrementAndClamp:
-                    return Silk.NET.WebGPU.StencilOperation.IncrementClamp;
+                    return WGPUStencilOperation.IncrementClamp;
 
                 case StencilOperation.DecrementAndClamp:
-                    return Silk.NET.WebGPU.StencilOperation.DecrementClamp;
+                    return WGPUStencilOperation.DecrementClamp;
 
                 case StencilOperation.Invert:
-                    return Silk.NET.WebGPU.StencilOperation.Invert;
+                    return WGPUStencilOperation.Invert;
 
                 case StencilOperation.IncrementAndWrap:
-                    return Silk.NET.WebGPU.StencilOperation.IncrementWrap;
+                    return WGPUStencilOperation.IncrementWrap;
 
                 case StencilOperation.DecrementAndWrap:
-                    return Silk.NET.WebGPU.StencilOperation.DecrementWrap;
+                    return WGPUStencilOperation.DecrementWrap;
 
                 default:
                     throw Illegal.Value<StencilOperation>();
             }
         }
 
-        public static VertexFormat VdToWGPUVertexFormat(VertexElementFormat format)
+        public static WGPUVertexFormat VdToWGPUVertexFormat(VertexElementFormat format)
         {
             switch (format)
             {
                 case VertexElementFormat.Float1:
-                    return VertexFormat.Float32;
+                    return WGPUVertexFormat.Float32;
 
                 case VertexElementFormat.Float2:
-                    return VertexFormat.Float32x2;
+                    return WGPUVertexFormat.Float32x2;
 
                 case VertexElementFormat.Float3:
-                    return VertexFormat.Float32x3;
+                    return WGPUVertexFormat.Float32x3;
 
                 case VertexElementFormat.Float4:
-                    return VertexFormat.Float32x4;
+                    return WGPUVertexFormat.Float32x4;
 
                 case VertexElementFormat.Byte2Norm:
-                    return VertexFormat.Unorm8x2;
+                    return WGPUVertexFormat.Unorm8x2;
 
                 case VertexElementFormat.Byte2:
-                    return VertexFormat.Uint8x2;
+                    return WGPUVertexFormat.Uint8x2;
 
                 case VertexElementFormat.Byte4Norm:
-                    return VertexFormat.Unorm8x4;
+                    return WGPUVertexFormat.Unorm8x4;
 
                 case VertexElementFormat.Byte4:
-                    return VertexFormat.Uint8x4;
+                    return WGPUVertexFormat.Uint8x4;
 
                 case VertexElementFormat.SByte2Norm:
-                    return VertexFormat.Snorm8x2;
+                    return WGPUVertexFormat.Snorm8x2;
 
                 case VertexElementFormat.SByte2:
-                    return VertexFormat.Sint8x2;
+                    return WGPUVertexFormat.Sint8x2;
 
                 case VertexElementFormat.SByte4Norm:
-                    return VertexFormat.Snorm8x4;
+                    return WGPUVertexFormat.Snorm8x4;
 
                 case VertexElementFormat.SByte4:
-                    return VertexFormat.Sint8x4;
+                    return WGPUVertexFormat.Sint8x4;
 
                 case VertexElementFormat.UShort2Norm:
-                    return VertexFormat.Unorm16x2;
+                    return WGPUVertexFormat.Unorm16x2;
 
                 case VertexElementFormat.UShort2:
-                    return VertexFormat.Uint16x2;
+                    return WGPUVertexFormat.Uint16x2;
 
                 case VertexElementFormat.UShort4Norm:
-                    return VertexFormat.Unorm16x4;
+                    return WGPUVertexFormat.Unorm16x4;
 
                 case VertexElementFormat.UShort4:
-                    return VertexFormat.Uint16x4;
+                    return WGPUVertexFormat.Uint16x4;
 
                 case VertexElementFormat.Short2Norm:
-                    return VertexFormat.Snorm16x2;
+                    return WGPUVertexFormat.Snorm16x2;
 
                 case VertexElementFormat.Short2:
-                    return VertexFormat.Sint16x2;
+                    return WGPUVertexFormat.Sint16x2;
 
                 case VertexElementFormat.Short4Norm:
-                    return VertexFormat.Snorm16x4;
+                    return WGPUVertexFormat.Snorm16x4;
 
                 case VertexElementFormat.Short4:
-                    return VertexFormat.Sint16x4;
+                    return WGPUVertexFormat.Sint16x4;
 
                 case VertexElementFormat.UInt1:
-                    return VertexFormat.Uint32;
+                    return WGPUVertexFormat.Uint32;
 
                 case VertexElementFormat.UInt2:
-                    return VertexFormat.Uint32x2;
+                    return WGPUVertexFormat.Uint32x2;
 
                 case VertexElementFormat.UInt3:
-                    return VertexFormat.Uint32x3;
+                    return WGPUVertexFormat.Uint32x3;
 
                 case VertexElementFormat.UInt4:
-                    return VertexFormat.Uint32x4;
+                    return WGPUVertexFormat.Uint32x4;
 
                 case VertexElementFormat.Int1:
-                    return VertexFormat.Sint32;
+                    return WGPUVertexFormat.Sint32;
 
                 case VertexElementFormat.Int2:
-                    return VertexFormat.Sint32x2;
+                    return WGPUVertexFormat.Sint32x2;
 
                 case VertexElementFormat.Int3:
-                    return VertexFormat.Sint32x3;
+                    return WGPUVertexFormat.Sint32x3;
 
                 case VertexElementFormat.Int4:
-                    return VertexFormat.Sint32x4;
+                    return WGPUVertexFormat.Sint32x4;
 
                 case VertexElementFormat.Half1:
                     throw Illegal.Value<VertexElementFormat>();
 
                 case VertexElementFormat.Half2:
-                    return VertexFormat.Float16x2;
+                    return WGPUVertexFormat.Float16x2;
 
                 case VertexElementFormat.Half4:
-                    return VertexFormat.Float16x4;
+                    return WGPUVertexFormat.Float16x4;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(format), format, null);
@@ -849,31 +849,31 @@ namespace Veldrid.WGPU
         }
 
         [SuppressMessage("ReSharper", "BitwiseOperatorOnEnumWithoutFlags")] // Silk.NET issue.
-        public static ShaderStage VdToWGPUShaderStage(ShaderStages stage)
+        public static WGPUShaderStage VdToWGPUShaderStage(ShaderStages stage)
         {
-            var ret = ShaderStage.None;
+            var ret = WGPUShaderStage.None;
 
             if ((stage & ShaderStages.Vertex) == ShaderStages.Vertex)
-                ret |= ShaderStage.Vertex;
+                ret |= WGPUShaderStage.Vertex;
 
             if ((stage & ShaderStages.Fragment) == ShaderStages.Fragment)
-                ret |= ShaderStage.Fragment;
+                ret |= WGPUShaderStage.Fragment;
 
             if ((stage & ShaderStages.Compute) == ShaderStages.Compute)
-                ret |= ShaderStage.Compute;
+                ret |= WGPUShaderStage.Compute;
 
             return ret;
         }
 
-        public static Silk.NET.WebGPU.IndexFormat VdToWGPUIndexFormat(IndexFormat format)
+        public static WGPUIndexFormat VdToWGPUIndexFormat(IndexFormat format)
         {
             switch (format)
             {
                 case IndexFormat.UInt16:
-                    return Silk.NET.WebGPU.IndexFormat.Uint16;
+                    return WGPUIndexFormat.Uint16;
 
                 case IndexFormat.UInt32:
-                    return Silk.NET.WebGPU.IndexFormat.Uint32;
+                    return WGPUIndexFormat.Uint32;
 
                 default:
                     throw Illegal.Value<IndexFormat>();

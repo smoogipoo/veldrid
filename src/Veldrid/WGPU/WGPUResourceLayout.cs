@@ -1,7 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using Silk.NET.WebGPU;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -10,76 +11,72 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
-        public readonly BindGroupLayout* Layout;
-
-        private readonly WGPUGraphicsDevice gd;
+        public readonly WGPUBindGroupLayout Layout;
 
         private bool isDisposed;
 
         public WGPUResourceLayout(WGPUGraphicsDevice gd, ref ResourceLayoutDescription description)
             : base(ref description)
         {
-            this.gd = gd;
-
-            BindGroupLayoutEntry* entries = stackalloc BindGroupLayoutEntry[description.Elements.Length];
+            WGPUBindGroupLayoutEntry* entries = stackalloc WGPUBindGroupLayoutEntry[description.Elements.Length];
 
             for (int i = 0; i < description.Elements.Length; i++)
             {
                 var element = description.Elements[i];
 
-                entries[i] = new BindGroupLayoutEntry
+                entries[i] = new WGPUBindGroupLayoutEntry
                 {
-                    Binding = (uint)i,
-                    Visibility = WGPUFormats.VdToWGPUShaderStage(element.Stages)
+                    binding = (uint)i,
+                    visibility = WGPUFormats.VdToWGPUShaderStage(element.Stages)
                 };
 
                 switch (element.Kind)
                 {
                     case ResourceKind.UniformBuffer:
-                        entries[i].Buffer = new BufferBindingLayout
+                        entries[i].buffer = new WGPUBufferBindingLayout
                         {
-                            Type = BufferBindingType.Uniform,
-                            HasDynamicOffset = (element.Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding
+                            type = WGPUBufferBindingType.Uniform,
+                            hasDynamicOffset = (element.Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding
                         };
                         break;
 
                     case ResourceKind.StructuredBufferReadOnly:
-                        entries[i].Buffer = new BufferBindingLayout
+                        entries[i].buffer = new WGPUBufferBindingLayout
                         {
-                            Type = BufferBindingType.ReadOnlyStorage,
-                            HasDynamicOffset = (element.Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding
+                            type = WGPUBufferBindingType.ReadOnlyStorage,
+                            hasDynamicOffset = (element.Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding
                         };
                         break;
 
                     case ResourceKind.StructuredBufferReadWrite:
-                        entries[i].Buffer = new BufferBindingLayout
+                        entries[i].buffer = new WGPUBufferBindingLayout
                         {
-                            Type = BufferBindingType.Storage,
-                            HasDynamicOffset = (element.Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding
+                            type = WGPUBufferBindingType.Storage,
+                            hasDynamicOffset = (element.Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding
                         };
                         break;
 
                     case ResourceKind.TextureReadOnly:
-                        entries[i].Texture = new TextureBindingLayout
+                        entries[i].texture = new WGPUTextureBindingLayout
                         {
-                            SampleType = TextureSampleType.Float,
-                            ViewDimension = TextureViewDimension.Dimension2D
+                            sampleType = WGPUTextureSampleType.Float,
+                            viewDimension = WGPUTextureViewDimension._2D
                         };
                         break;
 
                     case ResourceKind.TextureReadWrite:
-                        entries[i].StorageTexture = new StorageTextureBindingLayout
+                        entries[i].storageTexture = new WGPUStorageTextureBindingLayout
                         {
-                            Access = StorageTextureAccess.WriteOnly,
-                            Format = TextureFormat.Rgba32float,
-                            ViewDimension = TextureViewDimension.Dimension2D
+                            access = WGPUStorageTextureAccess.WriteOnly,
+                            format = WGPUTextureFormat.RGBA32Float,
+                            viewDimension = WGPUTextureViewDimension._2D
                         };
                         break;
 
                     case ResourceKind.Sampler:
-                        entries[i].Sampler = new SamplerBindingLayout
+                        entries[i].sampler = new WGPUSamplerBindingLayout
                         {
-                            Type = SamplerBindingType.Filtering
+                            type = WGPUSamplerBindingType.Filtering
                         };
                         break;
 
@@ -88,11 +85,13 @@ namespace Veldrid.WGPU
                 }
             }
 
-            Layout = gd.WebGPU.DeviceCreateBindGroupLayout(gd.NativeDevice, new BindGroupLayoutDescriptor
+            WGPUBindGroupLayoutDescriptor desc = new WGPUBindGroupLayoutDescriptor
             {
-                EntryCount = (uint)description.Elements.Length,
-                Entries = entries
-            });
+                entryCount = (uint)description.Elements.Length,
+                entries = entries
+            };
+
+            Layout = wgpuDeviceCreateBindGroupLayout(gd.NativeDevice, &desc);
         }
 
         public override void Dispose()
@@ -100,8 +99,8 @@ namespace Veldrid.WGPU
             if (isDisposed)
                 return;
 
-            if (Layout != null)
-                gd.WebGPU.BindGroupLayoutRelease(Layout);
+            if (Layout.IsNotNull)
+                wgpuBindGroupLayoutRelease(Layout);
 
             isDisposed = true;
         }

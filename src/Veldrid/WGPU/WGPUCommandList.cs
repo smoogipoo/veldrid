@@ -2,7 +2,9 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using Silk.NET.WebGPU;
+using System.Runtime.CompilerServices;
+using WebGPU;
+using static WebGPU.WebGPU;
 
 namespace Veldrid.WGPU
 {
@@ -14,12 +16,12 @@ namespace Veldrid.WGPU
         private readonly WGPUGraphicsDevice gd;
 
         private bool isDisposed;
-        private CommandEncoder* encoder;
-        private CommandBuffer* commandBuffer;
+        private WGPUCommandEncoder encoder;
+        private WGPUCommandBuffer commandBuffer;
 
-        private RenderPassEncoder* renderPass;
+        private WGPURenderPassEncoder renderPass;
 
-        private Color[] clearColourValues = Array.Empty<Color>();
+        private WGPUColor[] clearColourValues = Array.Empty<WGPUColor>();
         private bool[] validClearColourValues = Array.Empty<bool>();
         private float? clearDepthValue;
         private byte? clearStencilValue;
@@ -32,39 +34,39 @@ namespace Veldrid.WGPU
 
         public override void Begin()
         {
-            encoder = gd.WebGPU.DeviceCreateCommandEncoder(gd.NativeDevice, new CommandEncoderDescriptor());
+            encoder = wgpuDeviceCreateCommandEncoder(gd.NativeDevice);
         }
 
         public override void End()
         {
             endRenderPass();
 
-            commandBuffer = gd.WebGPU.CommandEncoderFinish(encoder, new CommandBufferDescriptor());
-            gd.WebGPU.CommandEncoderRelease(encoder);
+            commandBuffer = wgpuCommandEncoderFinish(encoder);
+            wgpuCommandEncoderRelease(encoder);
 
             resetState();
         }
 
-        public CommandBuffer* ConsumeCommandBuffer()
+        public WGPUCommandBuffer ConsumeCommandBuffer()
         {
-            if (commandBuffer == null)
+            if (commandBuffer.IsNull)
                 throw new VeldridException("CommandList.End() has not been called.");
 
-            CommandBuffer* buffer = commandBuffer;
-            commandBuffer = null;
+            WGPUCommandBuffer buffer = commandBuffer;
+            commandBuffer = default;
             return buffer;
         }
 
         public override void SetViewport(uint index, ref Viewport viewport)
         {
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderSetViewport(renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
+            wgpuRenderPassEncoderSetViewport(renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
         }
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
         {
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderSetScissorRect(renderPass, x, y, width, height);
+            wgpuRenderPassEncoderSetScissorRect(renderPass, x, y, width, height);
         }
 
         public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
@@ -77,7 +79,7 @@ namespace Veldrid.WGPU
             WGPUResourceSet wgpuResourceSet = Util.AssertSubtype<ResourceSet, WGPUResourceSet>(rs);
 
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderSetBindGroup(renderPass, slot, wgpuResourceSet.BindGroup, dynamicOffsetsCount, dynamicOffsets);
+            wgpuRenderPassEncoderSetBindGroup(renderPass, slot, wgpuResourceSet.BindGroup, dynamicOffsetsCount, (uint*)Unsafe.AsPointer(ref dynamicOffsets));
         }
 
         protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
@@ -99,7 +101,7 @@ namespace Veldrid.WGPU
             WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
 
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderDrawIndirect(renderPass, wgpuBuffer.Buffer, offset);
+            wgpuRenderPassEncoderDrawIndirect(renderPass, wgpuBuffer.Buffer, offset);
         }
 
         protected override void DrawIndexedIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
@@ -107,7 +109,7 @@ namespace Veldrid.WGPU
             WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
 
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderDrawIndexedIndirect(renderPass, wgpuBuffer.Buffer, offset);
+            wgpuRenderPassEncoderDrawIndexedIndirect(renderPass, wgpuBuffer.Buffer, offset);
         }
 
         protected override void DispatchIndirectCore(DeviceBuffer indirectBuffer, uint offset)
@@ -133,23 +135,25 @@ namespace Veldrid.WGPU
 
             // Todo: array layers?
 
-            gd.WebGPU.CommandEncoderCopyTextureToTexture(
-                encoder,
-                new ImageCopyTexture
-                {
-                    Texture = wgpuSrc.Texture,
-                    MipLevel = srcMipLevel,
-                    Origin = new Origin3D(srcX, srcY, srcZ),
-                    Aspect = TextureAspect.All
-                },
-                new ImageCopyTexture
-                {
-                    Texture = wgpuDst.Texture,
-                    MipLevel = dstMipLevel,
-                    Origin = new Origin3D(dstX, dstY, dstZ),
-                    Aspect = TextureAspect.All
-                },
-                new Extent3D(width, height, depth));
+            WGPUImageCopyTexture src = new WGPUImageCopyTexture
+            {
+                texture = wgpuSrc.Texture,
+                mipLevel = srcMipLevel,
+                origin = new WGPUOrigin3D(srcX, srcY, srcZ),
+                aspect = WGPUTextureAspect.All
+            };
+
+            WGPUImageCopyTexture dest = new WGPUImageCopyTexture
+            {
+                texture = wgpuDst.Texture,
+                mipLevel = dstMipLevel,
+                origin = new WGPUOrigin3D(dstX, dstY, dstZ),
+                aspect = WGPUTextureAspect.All
+            };
+
+            WGPUExtent3D writeSize = new WGPUExtent3D(width, height, depth);
+
+            wgpuCommandEncoderCopyTextureToTexture(encoder, &src, &dest, &writeSize);
         }
 
         private protected override void SetPipelineCore(Pipeline pipeline)
@@ -160,7 +164,7 @@ namespace Veldrid.WGPU
             {
                 // Todo: End compute pass.
                 beginRenderPass();
-                gd.WebGPU.RenderPassEncoderSetPipeline(renderPass, wgpuPipeline.RenderPipeline);
+                wgpuRenderPassEncoderSetPipeline(renderPass, wgpuPipeline.RenderPipeline);
             }
             else
             {
@@ -173,7 +177,7 @@ namespace Veldrid.WGPU
             var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
 
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderSetVertexBuffer(renderPass, index, wgpuBuffer.Buffer, offset, buffer.SizeInBytes - offset);
+            wgpuRenderPassEncoderSetVertexBuffer(renderPass, index, wgpuBuffer.Buffer, offset, buffer.SizeInBytes - offset);
         }
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
@@ -181,15 +185,15 @@ namespace Veldrid.WGPU
             var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
 
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderSetIndexBuffer(renderPass, wgpuBuffer.Buffer, WGPUFormats.VdToWGPUIndexFormat(format), offset, buffer.SizeInBytes - offset);
+            wgpuRenderPassEncoderSetIndexBuffer(renderPass, wgpuBuffer.Buffer, WGPUFormats.VdToWGPUIndexFormat(format), offset, buffer.SizeInBytes - offset);
         }
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            clearColourValues[index] = new Color(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
+            clearColourValues[index] = new WGPUColor(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
             validClearColourValues[index] = true;
 
-            if (renderPass != null)
+            if (renderPass != default)
             {
                 endRenderPass();
                 beginRenderPass();
@@ -201,7 +205,7 @@ namespace Veldrid.WGPU
             clearDepthValue = depth;
             clearStencilValue = stencil;
 
-            if (renderPass != null)
+            if (renderPass != default)
             {
                 endRenderPass();
                 beginRenderPass();
@@ -211,13 +215,13 @@ namespace Veldrid.WGPU
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
         {
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderDraw(renderPass, vertexCount, instanceCount, vertexStart, instanceStart);
+            wgpuRenderPassEncoderDraw(renderPass, vertexCount, instanceCount, vertexStart, instanceStart);
         }
 
         private protected override void DrawIndexedCore(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
         {
             beginRenderPass();
-            gd.WebGPU.RenderPassEncoderDrawIndexed(renderPass, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
+            wgpuRenderPassEncoderDrawIndexed(renderPass, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
         }
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
@@ -243,22 +247,22 @@ namespace Veldrid.WGPU
 
         private void beginRenderPass()
         {
-            if (renderPass != null)
+            if (renderPass != default)
                 return;
 
-            RenderPassColorAttachment* colourAttachments = stackalloc RenderPassColorAttachment[Framebuffer.ColorTargets.Count];
+            WGPURenderPassColorAttachment* colourAttachments = stackalloc WGPURenderPassColorAttachment[Framebuffer.ColorTargets.Count];
 
             for (int i = 0; i < Framebuffer.ColorTargets.Count; i++)
             {
                 var texture = Util.AssertSubtype<Texture, WGPUTexture>(Framebuffer.ColorTargets[i].Target);
                 var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
 
-                colourAttachments[i] = new RenderPassColorAttachment
+                colourAttachments[i] = new WGPURenderPassColorAttachment
                 {
-                    View = textureView.View,
-                    LoadOp = validClearColourValues[i] ? LoadOp.Clear : LoadOp.Load,
-                    StoreOp = StoreOp.Store,
-                    ClearValue = new Color(clearColourValues[i].R, clearColourValues[i].G, clearColourValues[i].B, clearColourValues[i].A),
+                    view = textureView.View,
+                    loadOp = validClearColourValues[i] ? WGPULoadOp.Clear : WGPULoadOp.Load,
+                    storeOp = WGPUStoreOp.Store,
+                    clearValue = new WGPUColor(clearColourValues[i].r, clearColourValues[i].g, clearColourValues[i].b, clearColourValues[i].a),
                 };
             }
 
@@ -281,16 +285,16 @@ namespace Veldrid.WGPU
             //     };
             // }
 
-            var renderPassDescriptor = new RenderPassDescriptor
+            var renderPassDescriptor = new WGPURenderPassDescriptor
             {
-                ColorAttachmentCount = (uint)Framebuffer.ColorTargets.Count,
-                ColorAttachments = colourAttachments
+                colorAttachmentCount = (uint)Framebuffer.ColorTargets.Count,
+                colorAttachments = colourAttachments
             };
 
             // if (Framebuffer.DepthTarget != null)
             //     renderPassDescriptor.DepthStencilAttachment = &depthStencilAttachment;
 
-            renderPass = gd.WebGPU.CommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
+            renderPass = wgpuCommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
 
             Util.ClearArray(validClearColourValues);
             clearDepthValue = null;
@@ -299,13 +303,13 @@ namespace Veldrid.WGPU
 
         private void endRenderPass()
         {
-            if (renderPass == null)
+            if (renderPass.IsNull)
                 return;
 
-            gd.WebGPU.RenderPassEncoderEnd(renderPass);
-            gd.WebGPU.RenderPassEncoderRelease(renderPass);
+            wgpuRenderPassEncoderEnd(renderPass);
+            wgpuRenderPassEncoderRelease(renderPass);
 
-            renderPass = null;
+            renderPass = default;
         }
 
         private void resetState()
