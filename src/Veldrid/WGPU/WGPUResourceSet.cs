@@ -28,39 +28,35 @@ namespace Veldrid.WGPU
                 var resource = description.BoundResources[i];
                 var layout = description.Layout.Description.Elements[i];
 
+                entries[i] = new WGPUBindGroupEntry
+                {
+                    binding = (uint)i,
+                };
+
                 if (layout.Kind == ResourceKind.UniformBuffer || layout.Kind == ResourceKind.StructuredBufferReadOnly || layout.Kind == ResourceKind.StructuredBufferReadWrite)
                 {
                     var range = Util.GetBufferRange(resource, 0);
                     var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(range.Buffer);
 
-                    entries[i] = new WGPUBindGroupEntry
-                    {
-                        binding = (uint)i,
-                        buffer = wgpuBuffer.Buffer,
-                        offset = range.Offset,
-                        size = range.SizeInBytes
-                    };
+                    entries[i].buffer = wgpuBuffer.Buffer;
+                    entries[i].offset = range.Offset;
+                    entries[i].size = range.SizeInBytes;
                 }
                 else if (layout.Kind == ResourceKind.TextureReadOnly || layout.Kind == ResourceKind.TextureReadWrite)
                 {
                     var textureView = Util.GetTextureView(gd, resource);
                     var wgpuTextureView = Util.AssertSubtype<TextureView, WGPUTextureView>(textureView);
 
-                    entries[i] = new WGPUBindGroupEntry
-                    {
-                        binding = (uint)i,
-                        textureView = wgpuTextureView.View
-                    };
+                    entries[i].textureView = wgpuTextureView.View;
                 }
                 else if (layout.Kind == ResourceKind.Sampler)
                 {
                     var wgpuSampler = Util.AssertSubtype<IBindableResource, WGPUSampler>(resource);
 
-                    entries[i] = new WGPUBindGroupEntry
-                    {
-                        sampler = wgpuSampler.Sampler,
-                    };
+                    entries[i].sampler = wgpuSampler.Sampler;
                 }
+                else
+                    throw Illegal.Value<IBindableResource>();
             }
 
             WGPUBindGroupDescriptor desc = new WGPUBindGroupDescriptor
