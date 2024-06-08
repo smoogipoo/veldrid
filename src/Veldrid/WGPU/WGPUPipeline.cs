@@ -71,23 +71,45 @@ namespace Veldrid.WGPU
                 {
                     format = WGPUFormats.VdToWGPUTextureFormat(depthAttachment.Format),
                     depthWriteEnabled = depthState.DepthWriteEnabled,
-                    depthCompare = WGPUFormats.VdToWGPUCompareFunction(depthState.DepthComparison),
+                    depthCompare = depthState.DepthTestEnabled
+                        ? WGPUFormats.VdToWGPUCompareFunction(depthState.DepthComparison)
+                        : WGPUCompareFunction.Always,
                     stencilFront = new WGPUStencilFaceState
                     {
-                        compare = WGPUFormats.VdToWGPUCompareFunction(depthState.StencilFront.Comparison),
-                        failOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Fail),
-                        depthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.DepthFail),
-                        passOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Pass)
+                        compare = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUCompareFunction(depthState.StencilFront.Comparison)
+                            : WGPUCompareFunction.Always,
+                        failOp = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Fail)
+                            : WGPUStencilOperation.Keep,
+                        depthFailOp = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.DepthFail)
+                            : WGPUStencilOperation.Keep,
+                        passOp = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUStencilOperation(depthState.StencilFront.Pass)
+                            : WGPUStencilOperation.Keep
                     },
                     stencilBack = new WGPUStencilFaceState
                     {
-                        compare = WGPUFormats.VdToWGPUCompareFunction(depthState.StencilBack.Comparison),
-                        failOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Fail),
-                        depthFailOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.DepthFail),
-                        passOp = WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Pass)
+                        compare = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUCompareFunction(depthState.StencilBack.Comparison)
+                            : WGPUCompareFunction.Always,
+                        failOp = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Fail)
+                            : WGPUStencilOperation.Keep,
+                        depthFailOp = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.DepthFail)
+                            : WGPUStencilOperation.Keep,
+                        passOp = depthState.StencilTestEnabled
+                            ? WGPUFormats.VdToWGPUStencilOperation(depthState.StencilBack.Pass)
+                            : WGPUStencilOperation.Keep
                     },
-                    stencilReadMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilReadMask : 0u,
-                    stencilWriteMask = FormatHelpers.IsStencilFormat(depthAttachment.Format) ? depthState.StencilWriteMask : 0u,
+                    stencilReadMask = FormatHelpers.IsStencilFormat(depthAttachment.Format)
+                        ? depthState.StencilReadMask
+                        : 0u,
+                    stencilWriteMask = FormatHelpers.IsStencilFormat(depthAttachment.Format)
+                        ? depthState.StencilWriteMask
+                        : 0u,
                 };
             }
 
