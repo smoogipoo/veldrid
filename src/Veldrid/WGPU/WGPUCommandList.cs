@@ -266,24 +266,24 @@ namespace Veldrid.WGPU
                 };
             }
 
-            // RenderPassDepthStencilAttachment depthStencilAttachment = default;
-            //
-            // if (Framebuffer.DepthTarget is FramebufferAttachment depthTarget)
-            // {
-            //     var texture = Util.AssertSubtype<Texture, WGPUTexture>(depthTarget.Target);
-            //     var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
-            //
-            //     depthStencilAttachment = new RenderPassDepthStencilAttachment
-            //     {
-            //         View = textureView.View,
-            //         DepthLoadOp = clearDepthValue == null ? LoadOp.Load : LoadOp.Clear,
-            //         DepthStoreOp = StoreOp.Store,
-            //         DepthClearValue = clearDepthValue ?? 0,
-            //         StencilLoadOp = clearStencilValue == null ? LoadOp.Load : LoadOp.Clear,
-            //         StencilStoreOp = StoreOp.Store,
-            //         StencilClearValue = clearStencilValue ?? 0
-            //     };
-            // }
+            WGPURenderPassDepthStencilAttachment depthStencilAttachment = default;
+
+            if (Framebuffer.DepthTarget is FramebufferAttachment depthTarget)
+            {
+                var texture = Util.AssertSubtype<Texture, WGPUTexture>(depthTarget.Target);
+                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+
+                depthStencilAttachment = new WGPURenderPassDepthStencilAttachment
+                {
+                    view = textureView.View,
+                    depthLoadOp = clearDepthValue == null ? WGPULoadOp.Load : WGPULoadOp.Clear,
+                    depthStoreOp = WGPUStoreOp.Store,
+                    depthClearValue = clearDepthValue ?? 0,
+                    stencilLoadOp = clearStencilValue == null ? WGPULoadOp.Load : WGPULoadOp.Clear,
+                    stencilStoreOp = WGPUStoreOp.Store,
+                    stencilClearValue = clearStencilValue ?? 0
+                };
+            }
 
             var renderPassDescriptor = new WGPURenderPassDescriptor
             {
@@ -291,8 +291,8 @@ namespace Veldrid.WGPU
                 colorAttachments = colourAttachments
             };
 
-            // if (Framebuffer.DepthTarget != null)
-            //     renderPassDescriptor.DepthStencilAttachment = &depthStencilAttachment;
+            if (Framebuffer.DepthTarget != null)
+                renderPassDescriptor.depthStencilAttachment = &depthStencilAttachment;
 
             renderPass = wgpuCommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
 
