@@ -76,6 +76,7 @@ namespace Veldrid.WGPU
                     case ResourceKind.Sampler:
                         entries[i].sampler = new WGPUSamplerBindingLayout
                         {
+                            // Todo: What if the sampler has a comparison func?
                             type = WGPUSamplerBindingType.Filtering
                         };
                         break;

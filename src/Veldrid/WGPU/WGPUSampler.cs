@@ -32,7 +32,7 @@ namespace Veldrid.WGPU
                 lodMaxClamp = description.MaximumLod,
                 compare = description.ComparisonKind != null
                     ? WGPUFormats.VdToWGPUCompareFunction(description.ComparisonKind.Value)
-                    : WGPUCompareFunction.Never,
+                    : WGPUCompareFunction.Undefined,
                 maxAnisotropy = (ushort)Math.Max(1, description.MaximumAnisotropy)
             };
 
