@@ -7,13 +7,11 @@ namespace Veldrid.WGPU
     {
         private readonly WGPUSwapchainTextureView view;
 
-        public WGPUSwapchainTexture(WGPUGraphicsDevice gd, ref TextureDescription description)
-            : base(gd, ref description)
+        public WGPUSwapchainTexture(WGPUSwapchain swapchain, ref TextureDescription description)
+            : base(ref description, default)
         {
-            view = new WGPUSwapchainTextureView(gd, new TextureViewDescription(this));
+            view = new WGPUSwapchainTextureView(swapchain, new TextureViewDescription(this));
         }
-
-        public void ReleaseView() => view.Release();
 
         private protected override TextureView CreateFullTextureView(GraphicsDevice gd) => view;
 

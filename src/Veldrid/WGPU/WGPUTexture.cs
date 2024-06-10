@@ -29,7 +29,7 @@ namespace Veldrid.WGPU
         private bool isDisposed;
 
         public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description)
-            : this(gd, ref description, default)
+            : this(ref description, default)
         {
             WGPUTextureDescriptor desc = new WGPUTextureDescriptor
             {
@@ -44,7 +44,7 @@ namespace Veldrid.WGPU
             Texture = wgpuDeviceCreateTexture(gd.NativeDevice, &desc);
         }
 
-        public WGPUTexture(WGPUGraphicsDevice gd, ref TextureDescription description, WebGPU.WGPUTexture texture)
+        public WGPUTexture(ref TextureDescription description, WebGPU.WGPUTexture texture)
         {
             Texture = texture;
 

@@ -22,6 +22,7 @@ namespace Veldrid.WGPU
         public override uint Height => height;
 
         private readonly WGPUGraphicsDevice gd;
+        private readonly WGPUSwapchain swapchain;
         private readonly WGPUTextureFormat colorFormat;
         private readonly PixelFormat? depthFormat;
 
@@ -34,9 +35,10 @@ namespace Veldrid.WGPU
 
         private bool isDisposed;
 
-        public WGPUSwapchainFramebuffer(WGPUGraphicsDevice gd, WGPUTextureFormat colorFormat, PixelFormat? depthFormat)
+        public WGPUSwapchainFramebuffer(WGPUGraphicsDevice gd, WGPUSwapchain swapchain, WGPUTextureFormat colorFormat, PixelFormat? depthFormat)
         {
             this.gd = gd;
+            this.swapchain = swapchain;
             this.colorFormat = colorFormat;
             this.depthFormat = depthFormat;
         }
@@ -52,7 +54,7 @@ namespace Veldrid.WGPU
             Util.EnsureArrayMinimumSize(ref colorTargets, 1);
 
             TextureDescription colorDescription = TextureDescription.Texture2D(width, height, 1, 1, WGPUFormats.WGPUToVdPixelFormat(colorFormat), TextureUsage.RenderTarget);
-            colorTargets![0] = new FramebufferAttachment(new WGPUSwapchainTexture(gd, ref colorDescription), 0);
+            colorTargets![0] = new FramebufferAttachment(new WGPUSwapchainTexture(swapchain, ref colorDescription), 0);
 
             if (depthFormat is PixelFormat depth)
             {
@@ -61,15 +63,6 @@ namespace Veldrid.WGPU
             }
 
             outputDescription = OutputDescription.CreateFromFramebuffer(this);
-        }
-
-        public void ReleaseView()
-        {
-            if (colorTargets == null)
-                return;
-
-            var wgpuColorTarget = Util.AssertSubtype<Texture, WGPUSwapchainTexture>(colorTargets[0].Target);
-            wgpuColorTarget.ReleaseView();
         }
 
         public override void Dispose()

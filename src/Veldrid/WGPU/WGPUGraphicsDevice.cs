@@ -350,7 +350,10 @@ namespace Veldrid.WGPU
         private protected override void SwapBuffersCore(Swapchain swapchain)
         {
             WGPUSwapchain wgpuSwapchain = Util.AssertSubtype<Swapchain, WGPUSwapchain>(swapchain);
+
             wgpuSwapchain.Present();
+            wgpuSwapchain.ReleaseImage();
+            wgpuSwapchain.AcquireNextImage();
         }
 
         private protected override void WaitForIdleCore()
