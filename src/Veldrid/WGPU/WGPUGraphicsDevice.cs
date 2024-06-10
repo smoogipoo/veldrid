@@ -47,7 +47,7 @@ namespace Veldrid.WGPU
             NativeSurface = createSurface(swapchainDesc);
             NativeAdapter = requestAdapter(new WGPURequestAdapterOptions
             {
-                compatibleSurface = NativeSurface,
+                compatibleSurface = NativeSurface
             });
 
             uint featureCount = (uint)wgpuAdapterEnumerateFeatures(NativeAdapter, null);
@@ -327,7 +327,6 @@ namespace Veldrid.WGPU
             WGPUCommandList wgpuCommandList = Util.AssertSubtype<CommandList, WGPUCommandList>(commandList);
 
             WGPUCommandBuffer buffer = wgpuCommandList.ConsumeCommandBuffer();
-
             wgpuQueueSubmit(commandQueue, 1, &buffer);
             wgpuCommandBufferRelease(buffer);
         }

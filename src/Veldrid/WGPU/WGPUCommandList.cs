@@ -193,7 +193,7 @@ namespace Veldrid.WGPU
             clearColourValues[index] = new WGPUColor(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
             validClearColourValues[index] = true;
 
-            if (renderPass != default)
+            if (renderPass.IsNotNull)
             {
                 endRenderPass();
                 beginRenderPass();
@@ -205,7 +205,7 @@ namespace Veldrid.WGPU
             clearDepthValue = depth;
             clearStencilValue = stencil;
 
-            if (renderPass != default)
+            if (renderPass.IsNotNull)
             {
                 endRenderPass();
                 beginRenderPass();
@@ -247,7 +247,7 @@ namespace Veldrid.WGPU
 
         private void beginRenderPass()
         {
-            if (renderPass != default)
+            if (renderPass.IsNotNull)
                 return;
 
             WGPURenderPassColorAttachment* colourAttachments = stackalloc WGPURenderPassColorAttachment[Framebuffer.ColorTargets.Count];
