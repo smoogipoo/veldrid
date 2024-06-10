@@ -15,6 +15,7 @@ namespace Veldrid.WGPU
 
         public readonly WGPUPipelineLayout Layout;
         public readonly WGPURenderPipeline RenderPipeline;
+        public readonly WGPUComputePipeline ComputePipeline;
 
         private bool isDisposed;
 
@@ -222,6 +223,56 @@ namespace Veldrid.WGPU
             : base(ref description)
         {
             IsComputePipeline = true;
+
+            WGPUShader computeShader = Util.AssertSubtype<Shader, WGPUShader>(description.ComputeShader);
+
+            WGPUConstantEntry* constants = stackalloc WGPUConstantEntry[description.Specializations?.Length ?? 0];
+            WGPUBindGroupLayout* bindGroups = stackalloc WGPUBindGroupLayout[description.ResourceLayouts.Length];
+
+            if (description.Specializations != null)
+            {
+                for (int i = 0; i < description.Specializations.Length; i++)
+                {
+                    var spec = description.Specializations[i];
+
+                    constants[i] = new WGPUConstantEntry
+                    {
+                        key = (sbyte*)&spec.ID,
+                        value = spec.Data
+                    };
+                }
+            }
+
+            for (int i = 0; i < description.ResourceLayouts.Length; i++)
+            {
+                var layout = Util.AssertSubtype<ResourceLayout, WGPUResourceLayout>(description.ResourceLayouts[i]);
+                bindGroups[i] = layout.Layout;
+            }
+
+            WGPUPipelineLayoutDescriptor pipelineLayoutDesc = new WGPUPipelineLayoutDescriptor
+            {
+                bindGroupLayoutCount = (uint)description.ResourceLayouts.Length,
+                bindGroupLayouts = bindGroups
+            };
+
+            Layout = wgpuDeviceCreatePipelineLayout(gd.NativeDevice, &pipelineLayoutDesc);
+
+            fixed (sbyte* computeEntryPointPtr = computeShader.EntryPoint.GetUtf8Span())
+            {
+                WGPUComputePipelineDescriptor computePipelineDesc = new WGPUComputePipelineDescriptor
+                {
+                    layout = Layout,
+                    compute = new WGPUProgrammableStageDescriptor
+                    {
+                        module = computeShader.Module,
+                        entryPoint = computeEntryPointPtr,
+                        constantCount = (uint)(description.Specializations?.Length ?? 0),
+                        constants = constants,
+                    },
+                };
+
+                ComputePipeline = wgpuDeviceCreateComputePipeline(gd.NativeDevice, &computePipelineDesc);
+            }
         }
 
         public override void Dispose()
@@ -234,6 +285,9 @@ namespace Veldrid.WGPU
 
             if (RenderPipeline.IsNotNull)
                 wgpuRenderPipelineRelease(RenderPipeline);
+
+            if (ComputePipeline.IsNotNull)
+                wgpuComputePipelineRelease(ComputePipeline);
 
             isDisposed = true;
         }

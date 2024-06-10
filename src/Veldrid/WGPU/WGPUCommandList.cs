@@ -20,6 +20,7 @@ namespace Veldrid.WGPU
         private WGPUCommandBuffer commandBuffer;
 
         private WGPURenderPassEncoder renderPass;
+        private WGPUComputePassEncoder computePass;
 
         private WGPUColor[] clearColourValues = Array.Empty<WGPUColor>();
         private bool[] validClearColourValues = Array.Empty<bool>();
@@ -40,6 +41,7 @@ namespace Veldrid.WGPU
         public override void End()
         {
             endRenderPass();
+            endComputePass();
 
             commandBuffer = wgpuCommandEncoderFinish(encoder);
             wgpuCommandEncoderRelease(encoder);
@@ -71,7 +73,8 @@ namespace Veldrid.WGPU
 
         public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
-            throw new NotImplementedException();
+            beginComputePass();
+            wgpuComputePassEncoderDispatchWorkgroups(computePass, groupCountX, groupCountY, groupCountZ);
         }
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
@@ -84,6 +87,10 @@ namespace Veldrid.WGPU
 
         protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
+            WGPUResourceSet wgpuResourceSet = Util.AssertSubtype<ResourceSet, WGPUResourceSet>(set);
+
+            beginComputePass();
+            wgpuComputePassEncoderSetBindGroup(computePass, slot, wgpuResourceSet.BindGroup, dynamicOffsetsCount, (uint*)Unsafe.AsPointer(ref dynamicOffsets));
         }
 
         protected override void SetFramebufferCore(Framebuffer fb)
@@ -114,7 +121,10 @@ namespace Veldrid.WGPU
 
         protected override void DispatchIndirectCore(DeviceBuffer indirectBuffer, uint offset)
         {
-            throw new NotImplementedException();
+            WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
+
+            beginComputePass();
+            wgpuComputePassEncoderDispatchWorkgroupsIndirect(computePass, wgpuBuffer.Buffer, offset);
         }
 
         protected override void ResolveTextureCore(Texture source, Texture destination)
@@ -160,15 +170,15 @@ namespace Veldrid.WGPU
         {
             var wgpuPipeline = Util.AssertSubtype<Pipeline, WGPUPipeline>(pipeline);
 
-            if (!wgpuPipeline.IsComputePipeline)
+            if (wgpuPipeline.IsComputePipeline)
             {
-                // Todo: End compute pass.
-                beginRenderPass();
-                wgpuRenderPassEncoderSetPipeline(renderPass, wgpuPipeline.RenderPipeline);
+                beginComputePass();
+                wgpuComputePassEncoderSetPipeline(computePass, wgpuPipeline.ComputePipeline);
             }
             else
             {
-                // Todo: Compute pipeline.
+                beginRenderPass();
+                wgpuRenderPassEncoderSetPipeline(renderPass, wgpuPipeline.RenderPipeline);
             }
         }
 
@@ -250,6 +260,9 @@ namespace Veldrid.WGPU
             if (renderPass.IsNotNull)
                 return;
 
+            if (computePass.IsNotNull)
+                endComputePass();
+
             WGPURenderPassColorAttachment* colourAttachments = stackalloc WGPURenderPassColorAttachment[Framebuffer.ColorTargets.Count];
 
             for (int i = 0; i < Framebuffer.ColorTargets.Count; i++)
@@ -312,9 +325,32 @@ namespace Veldrid.WGPU
             renderPass = default;
         }
 
+        private void beginComputePass()
+        {
+            if (computePass.IsNotNull)
+                return;
+
+            if (renderPass.IsNotNull)
+                endRenderPass();
+
+            WGPUComputePassDescriptor computePassDescriptor;
+            computePass = wgpuCommandEncoderBeginComputePass(encoder, &computePassDescriptor);
+        }
+
+        private void endComputePass()
+        {
+            if (computePass.IsNull)
+                return;
+
+            wgpuComputePassEncoderEnd(computePass);
+            wgpuComputePassEncoderRelease(computePass);
+
+            computePass = default;
+        }
+
         private void resetState()
         {
-            Framebuffer = null;
+            ClearCachedState();
         }
 
         public override void Dispose()
