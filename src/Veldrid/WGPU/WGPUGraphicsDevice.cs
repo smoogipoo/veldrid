@@ -365,9 +365,6 @@ namespace Veldrid.WGPU
         {
             WGPUTexture wgpuTexture = Util.AssertSubtype<Texture, WGPUTexture>(texture);
 
-            uint rowPitch = FormatHelpers.GetRowPitch(wgpuTexture.Width, wgpuTexture.Format);
-            uint depthPitch = FormatHelpers.GetNumRows(wgpuTexture.Height, wgpuTexture.Format);
-
             // Todo: array layers?
 
             WGPUImageCopyTexture dest = new WGPUImageCopyTexture
@@ -381,8 +378,8 @@ namespace Veldrid.WGPU
             WGPUTextureDataLayout layout = new WGPUTextureDataLayout
             {
                 offset = 0,
-                bytesPerRow = rowPitch,
-                rowsPerImage = depthPitch
+                bytesPerRow = FormatHelpers.GetRowPitch(width, wgpuTexture.Format),
+                rowsPerImage = FormatHelpers.GetNumRows(height, wgpuTexture.Format)
             };
 
             WGPUExtent3D writeSize = new WGPUExtent3D(width, height, depth);
