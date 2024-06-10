@@ -14,6 +14,7 @@ namespace Veldrid.WGPU
         private readonly WGPUGraphicsDevice gd;
 
         private WebGPU.WGPUTextureView view;
+        private WGPUSurfaceTexture texture;
 
         private bool isDisposed;
 
@@ -38,6 +39,7 @@ namespace Veldrid.WGPU
                     // Todo:
                 }
 
+                texture = surfaceTexture;
                 return view = wgpuTextureCreateView(surfaceTexture.texture, null);
             }
         }
@@ -47,7 +49,11 @@ namespace Veldrid.WGPU
             if (view.IsNotNull)
                 wgpuTextureViewRelease(view);
 
+            if (texture.texture.IsNotNull)
+                wgpuTextureRelease(texture.texture);
+
             view = default;
+            texture = default;
         }
 
         public override void Dispose()

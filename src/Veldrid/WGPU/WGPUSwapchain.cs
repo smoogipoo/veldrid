@@ -49,8 +49,8 @@ namespace Veldrid.WGPU
 
         public void Present()
         {
-            framebuffer.ReleaseView();
             wgpuSurfacePresent(gd.NativeSurface);
+            framebuffer.ReleaseView();
         }
 
         public override void Dispose()
