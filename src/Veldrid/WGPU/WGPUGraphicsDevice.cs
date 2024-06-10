@@ -40,6 +40,8 @@ namespace Veldrid.WGPU
         private readonly object resetEventsLock = new object();
         private readonly List<ManualResetEvent[]> resetEvents = new List<ManualResetEvent[]>();
 
+        private static readonly Queue<WGPUFence> pending_submissions = new Queue<WGPUFence>();
+
         public WGPUGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription swapchainDesc)
         {
             WGPUInstanceDescriptor instanceDescriptor = default;
@@ -325,10 +327,24 @@ namespace Veldrid.WGPU
         private protected override void SubmitCommandsCore(CommandList commandList, Fence fence)
         {
             WGPUCommandList wgpuCommandList = Util.AssertSubtype<CommandList, WGPUCommandList>(commandList);
+            WGPUFence wgpuFence = fence == null ? null : Util.AssertSubtype<Fence, WGPUFence>(fence);
 
             WGPUCommandBuffer buffer = wgpuCommandList.ConsumeCommandBuffer();
             wgpuQueueSubmit(commandQueue, 1, &buffer);
+
+            if (wgpuFence != null)
+            {
+                pending_submissions.Enqueue(wgpuFence);
+                wgpuQueueOnSubmittedWorkDone(commandQueue, &onQueueWorkDone, IntPtr.Zero);
+            }
+
             wgpuCommandBufferRelease(buffer);
+        }
+
+        [UnmanagedCallersOnly]
+        private static void onQueueWorkDone(WGPUQueueWorkDoneStatus status, IntPtr userData)
+        {
+            pending_submissions.Dequeue().Set();
         }
 
         private protected override void SwapBuffersCore(Swapchain swapchain)
