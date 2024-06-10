@@ -171,6 +171,9 @@ namespace Veldrid.WGPU
             if ((usage & TextureUsage.Storage) == TextureUsage.Storage)
                 wgpuUsage |= WGPUTextureUsage.StorageBinding;
 
+            if ((usage & TextureUsage.GenerateMipmaps) == TextureUsage.GenerateMipmaps)
+                wgpuUsage |= WGPUTextureUsage.TextureBinding | WGPUTextureUsage.StorageBinding;
+
             return wgpuUsage;
         }
 

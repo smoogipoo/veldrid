@@ -60,6 +60,15 @@ namespace Veldrid.WGPU
                         entries[i].texture = new WGPUTextureBindingLayout
                         {
                             sampleType = WGPUTextureSampleType.Float,
+                            viewDimension = WGPUTextureViewDimension._2D,
+                        };
+                        break;
+
+                    case ResourceKind.TextureWriteOnly:
+                        entries[i].storageTexture = new WGPUStorageTextureBindingLayout
+                        {
+                            access = WGPUStorageTextureAccess.WriteOnly,
+                            format = WGPUTextureFormat.RGBA8Unorm, // Todo:
                             viewDimension = WGPUTextureViewDimension._2D
                         };
                         break;
@@ -67,8 +76,8 @@ namespace Veldrid.WGPU
                     case ResourceKind.TextureReadWrite:
                         entries[i].storageTexture = new WGPUStorageTextureBindingLayout
                         {
-                            access = WGPUStorageTextureAccess.Undefined,
-                            format = WGPUTextureFormat.Undefined,
+                            access = WGPUStorageTextureAccess.ReadWrite,
+                            format = WGPUTextureFormat.RGBA8Unorm, // Todo:
                             viewDimension = WGPUTextureViewDimension._2D
                         };
                         break;

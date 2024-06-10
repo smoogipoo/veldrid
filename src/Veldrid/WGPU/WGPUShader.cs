@@ -18,19 +18,43 @@ namespace Veldrid.WGPU
         public WGPUShader(WGPUGraphicsDevice gd, ref ShaderDescription description)
             : base(description.Stage, description.EntryPoint)
         {
-            fixed (byte* codePtr = description.ShaderBytes)
+            // SpirV magic bytes
+            if (description.ShaderBytes.Length > 4
+                && description.ShaderBytes[0] == 0x03
+                && description.ShaderBytes[1] == 0x02
+                && description.ShaderBytes[2] == 0x23
+                && description.ShaderBytes[3] == 0x07)
             {
-                WGPUShaderModuleDescriptor desc = new WGPUShaderModuleDescriptor
+                fixed (byte* codePtr = description.ShaderBytes)
                 {
-                    nextInChain = WGPUUtil.Chain(new WGPUShaderModuleSPIRVDescriptor
+                    WGPUShaderModuleDescriptor desc = new WGPUShaderModuleDescriptor
                     {
-                        chain = { sType = WGPUSType.ShaderModuleSPIRVDescriptor },
-                        code = (uint*)codePtr,
-                        codeSize = (uint)description.ShaderBytes.Length / sizeof(uint),
-                    }),
-                };
+                        nextInChain = WGPUUtil.Chain(new WGPUShaderModuleSPIRVDescriptor
+                        {
+                            chain = { sType = WGPUSType.ShaderModuleSPIRVDescriptor },
+                            code = (uint*)codePtr,
+                            codeSize = (uint)description.ShaderBytes.Length / sizeof(uint),
+                        }),
+                    };
 
-                Module = wgpuDeviceCreateShaderModule(gd.NativeDevice, &desc);
+                    Module = wgpuDeviceCreateShaderModule(gd.NativeDevice, &desc);
+                }
+            }
+            else
+            {
+                fixed (byte* codePtr = description.ShaderBytes)
+                {
+                    WGPUShaderModuleDescriptor desc = new WGPUShaderModuleDescriptor
+                    {
+                        nextInChain = WGPUUtil.Chain(new WGPUShaderModuleWGSLDescriptor
+                        {
+                            chain = { sType = WGPUSType.ShaderModuleWGSLDescriptor },
+                            code = (sbyte*)codePtr
+                        }),
+                    };
+
+                    Module = wgpuDeviceCreateShaderModule(gd.NativeDevice, &desc);
+                }
             }
         }
 

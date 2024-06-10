@@ -37,6 +37,9 @@
     <EmbeddedResource Include="MTL/EmbeddedShaders/MTL_UnalignedBufferCopy_iOS.metallib">
       <LogicalName>MTL_UnalignedBufferCopy_iOS</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="WGPU/EmbeddedShaders/WGPU_Mipmap.wgsl">
+      <LogicalName>WGPU_Mipmap</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <PropertyGroup>

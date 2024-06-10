@@ -46,6 +46,16 @@
         /// <summary>
         ///     A <see cref="Veldrid.Sampler" />.
         /// </summary>
-        Sampler
+        Sampler,
+
+        /// <summary>
+        ///     A write-only <see cref="Texture" />, accessed through a Texture or <see cref="TextureView" />.
+        /// </summary>
+        /// <remarks>
+        ///     Binding a <see cref="Texture" /> to a resource slot expecting a TextureReadWrite is equivalent to binding a
+        ///     <see cref="TextureView" /> that covers the full mip and array layer range, with the original Texture's
+        ///     <see cref="PixelFormat" />.
+        /// </remarks>
+        TextureWriteOnly,
     }
 }

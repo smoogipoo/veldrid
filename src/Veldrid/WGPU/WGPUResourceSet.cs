@@ -42,7 +42,7 @@ namespace Veldrid.WGPU
                     entries[i].offset = range.Offset;
                     entries[i].size = range.SizeInBytes;
                 }
-                else if (layout.Kind == ResourceKind.TextureReadOnly || layout.Kind == ResourceKind.TextureReadWrite)
+                else if (layout.Kind == ResourceKind.TextureReadOnly || layout.Kind == ResourceKind.TextureReadWrite || layout.Kind == ResourceKind.TextureWriteOnly)
                 {
                     var textureView = Util.GetTextureView(gd, resource);
                     var wgpuTextureView = Util.AssertSubtype<TextureView, WGPUTextureView>(textureView);

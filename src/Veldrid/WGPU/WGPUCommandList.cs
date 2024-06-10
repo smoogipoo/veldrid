@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using WebGPU;
 using static WebGPU.WebGPU;
@@ -241,6 +242,63 @@ namespace Veldrid.WGPU
 
         private protected override void GenerateMipmapsCore(Texture texture)
         {
+            const string mipmap_shader_name = "WGPU_Mipmap";
+
+            using var resourceStream = typeof(WGPUGraphicsDevice).Assembly.GetManifestResourceStream(mipmap_shader_name)!;
+            using var ms = new MemoryStream((int)resourceStream.Length);
+            resourceStream.CopyTo(ms);
+
+            Shader shader = gd.ResourceFactory.CreateShader(new ShaderDescription(ShaderStages.Compute, ms.GetBuffer(), "mipmap"));
+            ResourceLayout layout = gd.ResourceFactory.CreateResourceLayout(new ResourceLayoutDescription
+            {
+                Elements = new[]
+                {
+                    new ResourceLayoutElementDescription("previousLevel", ResourceKind.TextureReadOnly, ShaderStages.Compute),
+                    new ResourceLayoutElementDescription("nextLevel", ResourceKind.TextureWriteOnly, ShaderStages.Compute),
+                }
+            });
+
+            Pipeline pipeline = gd.ResourceFactory.CreateComputePipeline(new ComputePipelineDescription(shader, [layout], 8, 8, 1));
+
+            TextureView[] views = new TextureView[texture.MipLevels];
+            ResourceSet[] resourceSets = new ResourceSet[texture.MipLevels];
+
+            for (int i = 0; i < views.Length; i++)
+            {
+                views[i] = gd.ResourceFactory.CreateTextureView(new TextureViewDescription(texture, texture.Format, (uint)i, 1, 0, 1));
+                if (i > 0)
+                    resourceSets[i] = gd.ResourceFactory.CreateResourceSet(new ResourceSetDescription(layout, views[i - 1], views[i]));
+            }
+
+            beginComputePass();
+            SetPipeline(pipeline);
+
+            uint width = texture.Width;
+            uint height = texture.Height;
+
+            for (int level = 1; level < views.Length; level++)
+            {
+                width /= 2;
+                height /= 2;
+
+                const uint wg_size = 8;
+                uint wgCountX = (width + wg_size - 1) / wg_size;
+                uint wgCountY = (height + wg_size - 1) / wg_size;
+
+                SetComputeResourceSet(0, resourceSets[level]);
+                Dispatch(wgCountX, wgCountY, 1);
+            }
+
+            endComputePass();
+
+            foreach (var set in resourceSets)
+                set?.Dispose();
+
+            foreach (var view in views)
+                view?.Dispose();
+
+            pipeline?.Dispose();
+            shader?.Dispose();
         }
 
         private protected override void PushDebugGroupCore(string name)
