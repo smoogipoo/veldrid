@@ -263,10 +263,11 @@ namespace Veldrid
 
             if ((description.Target.Usage & TextureUsage.Sampled) == 0
                 && (description.Target.Usage & TextureUsage.Storage) == 0
-                && (description.Target.Usage & TextureUsage.RenderTarget) == 0)
+                && (description.Target.Usage & TextureUsage.RenderTarget) == 0
+                && (description.Target.Usage & TextureUsage.DepthStencil) == 0)
             {
                 throw new VeldridException(
-                    "To create a TextureView, the target texture must have either Sampled, Storage, or RenderTarget usage flags.");
+                    "To create a TextureView, the target texture must have either Sampled, Storage, DepthStencil, or RenderTarget usage flags.");
             }
 
             if (!Features.SubsetTextureView &&

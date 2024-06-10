@@ -168,6 +168,9 @@ namespace Veldrid.WGPU
             if ((usage & TextureUsage.RenderTarget) == TextureUsage.RenderTarget)
                 wgpuUsage |= WGPUTextureUsage.RenderAttachment;
 
+            if ((usage & TextureUsage.DepthStencil) == TextureUsage.DepthStencil)
+                wgpuUsage |= WGPUTextureUsage.RenderAttachment;
+
             if ((usage & TextureUsage.Storage) == TextureUsage.Storage)
                 wgpuUsage |= WGPUTextureUsage.StorageBinding;
 
