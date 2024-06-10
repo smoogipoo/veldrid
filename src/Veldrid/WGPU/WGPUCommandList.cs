@@ -130,11 +130,36 @@ namespace Veldrid.WGPU
 
         protected override void ResolveTextureCore(Texture source, Texture destination)
         {
-            throw new NotImplementedException();
+            WGPUTexture wgpuSrc = Util.AssertSubtype<Texture, WGPUTexture>(source);
+            WGPUTexture wgpuDst = Util.AssertSubtype<Texture, WGPUTexture>(destination);
+
+            WGPUImageCopyTexture src = new WGPUImageCopyTexture
+            {
+                texture = wgpuSrc.Texture,
+                mipLevel = 0,
+                origin = new WGPUOrigin3D(0, 0, 0),
+                aspect = WGPUTextureAspect.All
+            };
+
+            WGPUImageCopyTexture dest = new WGPUImageCopyTexture
+            {
+                texture = wgpuDst.Texture,
+                mipLevel = 0,
+                origin = new WGPUOrigin3D(0, 0, 0),
+                aspect = WGPUTextureAspect.All
+            };
+
+            WGPUExtent3D writeSize = new WGPUExtent3D(source.Width, source.Height, wgpuSrc.ActualArrayLayers * wgpuSrc.Depth);
+
+            wgpuCommandEncoderCopyTextureToTexture(encoder, &src, &dest, &writeSize);
         }
 
         protected override void CopyBufferCore(DeviceBuffer source, uint sourceOffset, DeviceBuffer destination, uint destinationOffset, uint sizeInBytes)
         {
+            WGPUBuffer wgpuSrc = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(source);
+            WGPUBuffer wgpuDst = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(destination);
+
+            wgpuCommandEncoderCopyBufferToBuffer(encoder, wgpuSrc.Buffer, sourceOffset, wgpuDst.Buffer, destinationOffset, sizeInBytes);
         }
 
         protected override void CopyTextureCore(Texture source, uint srcX, uint srcY, uint srcZ, uint srcMipLevel, uint srcBaseArrayLayer, Texture destination, uint dstX, uint dstY, uint dstZ,
@@ -143,8 +168,6 @@ namespace Veldrid.WGPU
         {
             WGPUTexture wgpuSrc = Util.AssertSubtype<Texture, WGPUTexture>(source);
             WGPUTexture wgpuDst = Util.AssertSubtype<Texture, WGPUTexture>(destination);
-
-            // Todo: array layers?
 
             WGPUImageCopyTexture src = new WGPUImageCopyTexture
             {
@@ -162,7 +185,7 @@ namespace Veldrid.WGPU
                 aspect = WGPUTextureAspect.All
             };
 
-            WGPUExtent3D writeSize = new WGPUExtent3D(width, height, depth);
+            WGPUExtent3D writeSize = new WGPUExtent3D(width, height, depth * layerCount);
 
             wgpuCommandEncoderCopyTextureToTexture(encoder, &src, &dest, &writeSize);
         }
@@ -303,14 +326,32 @@ namespace Veldrid.WGPU
 
         private protected override void PushDebugGroupCore(string name)
         {
+            if (renderPass.IsNotNull)
+                wgpuRenderPassEncoderPushDebugGroup(renderPass, name.GetUtf8Span());
+            else if (computePass.IsNotNull)
+                wgpuComputePassEncoderPushDebugGroup(computePass, name.GetUtf8Span());
+            else if (encoder.IsNotNull)
+                wgpuCommandEncoderPushDebugGroup(encoder, name.GetUtf8Span());
         }
 
         private protected override void PopDebugGroupCore()
         {
+            if (renderPass.IsNotNull)
+                wgpuRenderPassEncoderPopDebugGroup(renderPass);
+            else if (computePass.IsNotNull)
+                wgpuComputePassEncoderPopDebugGroup(computePass);
+            else if (encoder.IsNotNull)
+                wgpuCommandEncoderPopDebugGroup(encoder);
         }
 
         private protected override void InsertDebugMarkerCore(string name)
         {
+            if (renderPass.IsNotNull)
+                wgpuRenderPassEncoderInsertDebugMarker(renderPass, name.GetUtf8Span());
+            else if (computePass.IsNotNull)
+                wgpuComputePassEncoderInsertDebugMarker(computePass, name.GetUtf8Span());
+            else if (encoder.IsNotNull)
+                wgpuCommandEncoderInsertDebugMarker(encoder, name.GetUtf8Span());
         }
 
         private void beginRenderPass()
