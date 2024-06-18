@@ -496,12 +496,13 @@ namespace Veldrid.WGPU
             if (computePass.IsNotNull)
                 endComputePass();
 
+            WGPUFramebufferBase wgpuFramebuffer = Util.AssertSubtype<Framebuffer, WGPUFramebufferBase>(Framebuffer);
+
             WGPURenderPassColorAttachment* colourAttachments = stackalloc WGPURenderPassColorAttachment[Framebuffer.ColorTargets.Count];
 
             for (int i = 0; i < Framebuffer.ColorTargets.Count; i++)
             {
-                var texture = Util.AssertSubtype<Texture, WGPUTexture>(Framebuffer.ColorTargets[i].Target);
-                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(wgpuFramebuffer.GetColourAttachmentTextureView(i));
 
                 colourAttachments[i] = new WGPURenderPassColorAttachment
                 {
@@ -514,10 +515,9 @@ namespace Veldrid.WGPU
 
             WGPURenderPassDepthStencilAttachment depthStencilAttachment = default;
 
-            if (Framebuffer.DepthTarget is FramebufferAttachment depthTarget)
+            if (Framebuffer.DepthTarget != null)
             {
-                var texture = Util.AssertSubtype<Texture, WGPUTexture>(depthTarget.Target);
-                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(texture.GetFullTextureView(gd));
+                var textureView = Util.AssertSubtype<TextureView, WGPUTextureViewBase>(wgpuFramebuffer.GetDepthAttachmentTextureView());
 
                 depthStencilAttachment = new WGPURenderPassDepthStencilAttachment
                 {

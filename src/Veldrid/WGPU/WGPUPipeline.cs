@@ -209,7 +209,7 @@ namespace Veldrid.WGPU
                         frontFace = WGPUFormats.VdToWGPUFrontFace(description.RasterizerState.FrontFace),
                         cullMode = WGPUFormats.VdToWGPUCullMode(description.RasterizerState.CullMode),
                     },
-                    depthStencil = depthStencilState,
+                    depthStencil = description.Outputs.DepthAttachment == null ? null : depthStencilState,
                     multisample = new WGPUMultisampleState
                     {
                         count = WGPUFormats.VdToWGPUSampleCount(description.Outputs.SampleCount),

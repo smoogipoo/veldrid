@@ -11,7 +11,7 @@ namespace Veldrid.WGPU
         private bool isDisposed;
 
         public WGPUFramebuffer(WGPUGraphicsDevice gd, ref FramebufferDescription description)
-            : base(ref description)
+            : base(gd, ref description)
         {
         }
 

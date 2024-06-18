@@ -5,20 +5,12 @@ namespace Veldrid.WGPU
 {
     internal unsafe class WGPUSwapchainTexture : WGPUTexture
     {
-        private readonly WGPUSwapchainTextureView view;
+        public readonly WGPUSwapchain Swapchain;
 
         public WGPUSwapchainTexture(WGPUSwapchain swapchain, ref TextureDescription description)
             : base(ref description, default)
         {
-            view = new WGPUSwapchainTextureView(swapchain, new TextureViewDescription(this));
-        }
-
-        private protected override TextureView CreateFullTextureView(GraphicsDevice gd) => view;
-
-        public override void Dispose()
-        {
-            base.Dispose();
-            view?.Dispose();
+            Swapchain = swapchain;
         }
     }
 }

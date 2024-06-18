@@ -46,7 +46,12 @@ namespace Veldrid.WGPU
             => new WGPUTexture(gd, ref description);
 
         protected override TextureView CreateTextureViewCore(ref TextureViewDescription description)
-            => new WGPUTextureView(gd, ref description);
+        {
+            if (description.Target is WGPUSwapchainTexture swapchainTexture)
+                return new WGPUSwapchainTextureView(swapchainTexture.Swapchain, description);
+
+            return new WGPUTextureView(gd, ref description);
+        }
 
         protected override DeviceBuffer CreateBufferCore(ref BufferDescription description)
             => new WGPUBuffer(gd, ref description);

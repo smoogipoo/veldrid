@@ -36,6 +36,7 @@ namespace Veldrid.WGPU
         private bool isDisposed;
 
         public WGPUSwapchainFramebuffer(WGPUGraphicsDevice gd, WGPUSwapchain swapchain, WGPUTextureFormat colorFormat, PixelFormat? depthFormat)
+            : base(gd)
         {
             this.gd = gd;
             this.swapchain = swapchain;
