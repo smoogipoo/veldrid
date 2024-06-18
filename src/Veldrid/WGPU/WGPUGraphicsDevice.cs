@@ -57,21 +57,20 @@ namespace Veldrid.WGPU
             fixed (WGPUFeatureName* featurePtr = features)
                 wgpuAdapterEnumerateFeatures(NativeAdapter, featurePtr);
 
-            // Todo: Not quite...
             Features = new GraphicsDeviceFeatures(
                 true,
                 true,
                 true,
+                false,
                 true,
                 true,
                 true,
                 true,
+                features.Contains(WGPUFeatureName.IndirectFirstInstance),
                 true,
                 true,
-                true,
-                true,
-                true,
-                true,
+                features.Contains(WGPUFeatureName.DepthClipControl),
+                false,
                 true,
                 true,
                 true,
@@ -80,7 +79,15 @@ namespace Veldrid.WGPU
                 true
             );
 
-            NativeDevice = requestDevice(new WGPUDeviceDescriptor());
+            fixed (WGPUFeatureName* featurePtr = features)
+            {
+                NativeDevice = requestDevice(new WGPUDeviceDescriptor
+                {
+                    requiredFeatures = featurePtr,
+                    requiredFeatureCount = (uint)features.Length
+                });
+            }
+
             wgpuDeviceSetUncapturedErrorCallback(NativeDevice, &onUncapturedError, IntPtr.Zero);
 
             WGPUSurfaceCapabilities caps;
