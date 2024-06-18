@@ -62,7 +62,7 @@ namespace Veldrid.WGPU
 
                 targets[i] = new WGPUColorTargetState
                 {
-                    format = WGPUFormats.VdToWGPUTextureFormat(outputState.Format),
+                    format = WGPUFormats.VdToWGPUTextureFormat(outputState.Format, false),
                     blend = &blendStates[i],
                     writeMask = WGPUFormats.VdToWGPUColorWriteMask(blendState.ColorWriteMask.GetOrDefault())
                 };
