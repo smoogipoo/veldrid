@@ -3,7 +3,6 @@
 
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using WebGPU;
 using static WebGPU.WebGPU;
 
@@ -23,8 +22,38 @@ namespace Veldrid.WGPU
         private WGPURenderPassEncoder renderPass;
         private WGPUComputePassEncoder computePass;
 
+        private WGPUPipeline graphicsPipeline;
+        private WGPUPipeline computePipeline;
+        private WGPUPipeline lastGraphicsPipeline;
+        private WGPUPipeline lastComputePipeline;
+
         private WGPUColor[] clearColourValues = Array.Empty<WGPUColor>();
-        private bool[] validClearColourValues = Array.Empty<bool>();
+        private bool[] clearColourValuesValid = Array.Empty<bool>();
+
+        private BoundResourceSetInfo[] graphicsResourceSets;
+        private bool[] graphicsResourceSetsActive = Array.Empty<bool>();
+        private uint graphicsResourceSetCount;
+
+        private BoundResourceSetInfo[] computeResourceSets;
+        private bool[] computeResourceSetsActive = Array.Empty<bool>();
+        private uint computeResourceSetCount;
+
+        private WGPUBuffer[] vertexBuffers;
+        private uint[] vertexBufferOffsets;
+        private bool[] vertexBuffersActive;
+        private uint vertexBufferCount;
+
+        private WGPUBuffer indexBuffer;
+        private WGPUIndexFormat indexBufferFormat;
+        private uint indexBufferOffset;
+        private bool indexBufferValid;
+
+        private Viewport viewportRect;
+        private bool viewportRectValid;
+
+        private readonly uint[] scissorRect = new uint[4];
+        private bool scissorRectValid;
+
         private float? clearDepthValue;
         private byte? clearStencilValue;
 
@@ -62,36 +91,37 @@ namespace Veldrid.WGPU
 
         public override void SetViewport(uint index, ref Viewport viewport)
         {
-            beginRenderPass();
-            wgpuRenderPassEncoderSetViewport(renderPass, viewport.X, viewport.Y, viewport.Width, viewport.Height, viewport.MinDepth, viewport.MaxDepth);
+            viewportRect = viewport;
+            viewportRectValid = false;
         }
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
         {
-            beginRenderPass();
-            wgpuRenderPassEncoderSetScissorRect(renderPass, x, y, width, height);
-        }
-
-        public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
-        {
-            beginComputePass();
-            wgpuComputePassEncoderDispatchWorkgroups(computePass, groupCountX, groupCountY, groupCountZ);
+            scissorRect[0] = x;
+            scissorRect[1] = y;
+            scissorRect[2] = width;
+            scissorRect[3] = height;
+            scissorRectValid = false;
         }
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
-            WGPUResourceSet wgpuResourceSet = Util.AssertSubtype<ResourceSet, WGPUResourceSet>(rs);
+            if (graphicsResourceSets[slot].Equals(rs, dynamicOffsetsCount, ref dynamicOffsets))
+                return;
 
-            beginRenderPass();
-            wgpuRenderPassEncoderSetBindGroup(renderPass, slot, wgpuResourceSet.BindGroup, dynamicOffsetsCount, (uint*)Unsafe.AsPointer(ref dynamicOffsets));
+            graphicsResourceSets[slot].Offsets.Dispose();
+            graphicsResourceSets[slot] = new BoundResourceSetInfo(rs, dynamicOffsetsCount, ref dynamicOffsets);
+            graphicsResourceSetsActive[slot] = false;
         }
 
         protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
-            WGPUResourceSet wgpuResourceSet = Util.AssertSubtype<ResourceSet, WGPUResourceSet>(set);
+            if (computeResourceSets[slot].Equals(set, dynamicOffsetsCount, ref dynamicOffsets))
+                return;
 
-            beginComputePass();
-            wgpuComputePassEncoderSetBindGroup(computePass, slot, wgpuResourceSet.BindGroup, dynamicOffsetsCount, (uint*)Unsafe.AsPointer(ref dynamicOffsets));
+            computeResourceSets[slot].Offsets.Dispose();
+            computeResourceSets[slot] = new BoundResourceSetInfo(set, dynamicOffsetsCount, ref dynamicOffsets);
+            computeResourceSetsActive[slot] = false;
         }
 
         protected override void SetFramebufferCore(Framebuffer fb)
@@ -99,16 +129,17 @@ namespace Veldrid.WGPU
             endRenderPass();
 
             Util.EnsureArrayMinimumSize(ref clearColourValues, (uint)fb.ColorTargets.Count);
-            Util.EnsureArrayMinimumSize(ref validClearColourValues, (uint)fb.ColorTargets.Count);
+            Util.EnsureArrayMinimumSize(ref clearColourValuesValid, (uint)fb.ColorTargets.Count);
 
-            beginRenderPass();
+            scissorRectValid = false;
+            viewportRectValid = false;
         }
 
         protected override void DrawIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
         {
             WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
 
-            beginRenderPass();
+            preDrawCommand();
             wgpuRenderPassEncoderDrawIndirect(renderPass, wgpuBuffer.Buffer, offset);
         }
 
@@ -116,15 +147,21 @@ namespace Veldrid.WGPU
         {
             WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
 
-            beginRenderPass();
+            preDrawCommand();
             wgpuRenderPassEncoderDrawIndexedIndirect(renderPass, wgpuBuffer.Buffer, offset);
+        }
+
+        public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
+        {
+            preComputeCommand();
+            wgpuComputePassEncoderDispatchWorkgroups(computePass, groupCountX, groupCountY, groupCountZ);
         }
 
         protected override void DispatchIndirectCore(DeviceBuffer indirectBuffer, uint offset)
         {
             WGPUBuffer wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(indirectBuffer);
 
-            beginComputePass();
+            preComputeCommand();
             wgpuComputePassEncoderDispatchWorkgroupsIndirect(computePass, wgpuBuffer.Buffer, offset);
         }
 
@@ -132,6 +169,8 @@ namespace Veldrid.WGPU
         {
             WGPUTexture wgpuSrc = Util.AssertSubtype<Texture, WGPUTexture>(source);
             WGPUTexture wgpuDst = Util.AssertSubtype<Texture, WGPUTexture>(destination);
+
+            endRenderPass();
 
             WGPUImageCopyTexture src = new WGPUImageCopyTexture
             {
@@ -192,69 +231,84 @@ namespace Veldrid.WGPU
 
         private protected override void SetPipelineCore(Pipeline pipeline)
         {
-            var wgpuPipeline = Util.AssertSubtype<Pipeline, WGPUPipeline>(pipeline);
+            if (pipeline.IsComputePipeline && computePipeline != pipeline)
+            {
+                computePipeline = Util.AssertSubtype<Pipeline, WGPUPipeline>(pipeline);
 
-            if (wgpuPipeline.IsComputePipeline)
-            {
-                beginComputePass();
-                wgpuComputePassEncoderSetPipeline(computePass, wgpuPipeline.ComputePipeline);
+                computeResourceSetCount = (uint)pipeline.ResourceLayouts.Length;
+                Util.EnsureArrayMinimumSize(ref computeResourceSets, computeResourceSetCount);
+                Util.EnsureArrayMinimumSize(ref computeResourceSetsActive, computeResourceSetCount);
+                Util.ClearArray(computeResourceSetsActive);
             }
-            else
+            else if (!pipeline.IsComputePipeline && graphicsPipeline != pipeline)
             {
-                beginRenderPass();
-                wgpuRenderPassEncoderSetPipeline(renderPass, wgpuPipeline.RenderPipeline);
+                graphicsPipeline = Util.AssertSubtype<Pipeline, WGPUPipeline>(pipeline);
+
+                graphicsResourceSetCount = (uint)pipeline.ResourceLayouts.Length;
+                Util.EnsureArrayMinimumSize(ref graphicsResourceSets, graphicsResourceSetCount);
+                Util.EnsureArrayMinimumSize(ref graphicsResourceSetsActive, graphicsResourceSetCount);
+                Util.ClearArray(graphicsResourceSetsActive);
+
+                vertexBufferCount = graphicsPipeline.VertexBufferCount;
+                Util.EnsureArrayMinimumSize(ref vertexBuffers, vertexBufferCount);
+                Util.EnsureArrayMinimumSize(ref vertexBufferOffsets, vertexBufferCount);
+                Util.EnsureArrayMinimumSize(ref vertexBuffersActive, vertexBufferCount);
+                Util.ClearArray(vertexBuffersActive);
             }
         }
 
         private protected override void SetVertexBufferCore(uint index, DeviceBuffer buffer, uint offset)
         {
-            var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+            Util.EnsureArrayMinimumSize(ref vertexBuffers, index + 1);
+            Util.EnsureArrayMinimumSize(ref vertexBufferOffsets, index + 1);
+            Util.EnsureArrayMinimumSize(ref vertexBuffersActive, index + 1);
 
-            beginRenderPass();
-            wgpuRenderPassEncoderSetVertexBuffer(renderPass, index, wgpuBuffer.Buffer, offset, buffer.SizeInBytes - offset);
+            if (vertexBuffers[index] != buffer || vertexBufferOffsets[index] != offset)
+            {
+                vertexBuffers[index] = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+                vertexBufferOffsets[index] = offset;
+                vertexBuffersActive[index] = false;
+            }
         }
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
-            var wgpuBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+            WGPUIndexFormat wgpuFormat = WGPUFormats.VdToWGPUIndexFormat(format);
 
-            beginRenderPass();
-            wgpuRenderPassEncoderSetIndexBuffer(renderPass, wgpuBuffer.Buffer, WGPUFormats.VdToWGPUIndexFormat(format), offset, buffer.SizeInBytes - offset);
+            if (indexBuffer == buffer && indexBufferFormat == wgpuFormat && indexBufferOffset == offset)
+                return;
+
+            indexBuffer = Util.AssertSubtype<DeviceBuffer, WGPUBuffer>(buffer);
+            indexBufferFormat = wgpuFormat;
+            indexBufferOffset = offset;
+            indexBufferValid = false;
         }
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            clearColourValues[index] = new WGPUColor(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
-            validClearColourValues[index] = true;
+            endRenderPass();
 
-            if (renderPass.IsNotNull)
-            {
-                endRenderPass();
-                beginRenderPass();
-            }
+            clearColourValues[index] = new WGPUColor(clearColor.R, clearColor.G, clearColor.B, clearColor.A);
+            clearColourValuesValid[index] = true;
         }
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
+            endRenderPass();
+
             clearDepthValue = depth;
             clearStencilValue = stencil;
-
-            if (renderPass.IsNotNull)
-            {
-                endRenderPass();
-                beginRenderPass();
-            }
         }
 
         private protected override void DrawCore(uint vertexCount, uint instanceCount, uint vertexStart, uint instanceStart)
         {
-            beginRenderPass();
+            preDrawCommand();
             wgpuRenderPassEncoderDraw(renderPass, vertexCount, instanceCount, vertexStart, instanceStart);
         }
 
         private protected override void DrawIndexedCore(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
         {
-            beginRenderPass();
+            preDrawCommand();
             wgpuRenderPassEncoderDrawIndexed(renderPass, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
         }
 
@@ -293,7 +347,6 @@ namespace Veldrid.WGPU
                     resourceSets[i] = gd.ResourceFactory.CreateResourceSet(new ResourceSetDescription(layout, views[i - 1], views[i]));
             }
 
-            beginComputePass();
             SetPipeline(pipeline);
 
             uint width = texture.Width;
@@ -354,7 +407,88 @@ namespace Veldrid.WGPU
                 wgpuCommandEncoderInsertDebugMarker(encoder, name.GetUtf8Span());
         }
 
-        private void beginRenderPass()
+        private void preDrawCommand()
+        {
+            beginCurrentRenderPass();
+
+            if (graphicsPipeline != lastGraphicsPipeline)
+            {
+                wgpuRenderPassEncoderSetPipeline(renderPass, graphicsPipeline.RenderPipeline);
+                lastGraphicsPipeline = graphicsPipeline;
+            }
+
+            for (uint i = 0; i < graphicsResourceSetCount; i++)
+            {
+                if (graphicsResourceSetsActive[i])
+                    continue;
+
+                activateResourceSet(i, graphicsResourceSets[i], true);
+                graphicsResourceSetsActive[i] = true;
+            }
+
+            for (uint i = 0; i < vertexBufferCount; i++)
+            {
+                if (vertexBuffersActive[i])
+                    continue;
+
+                wgpuRenderPassEncoderSetVertexBuffer(renderPass, i, vertexBuffers[i].Buffer, vertexBufferOffsets[i], vertexBuffers[i].SizeInBytes - vertexBufferOffsets[i]);
+                vertexBuffersActive[i] = true;
+            }
+
+            if (!indexBufferValid)
+            {
+                wgpuRenderPassEncoderSetIndexBuffer(renderPass, indexBuffer.Buffer, indexBufferFormat, indexBufferOffset, indexBuffer.SizeInBytes - indexBufferOffset);
+                indexBufferValid = true;
+            }
+
+            if (!viewportRectValid)
+            {
+                // See validation rules: https://developer.mozilla.org/en-US/docs/Web/API/GPURenderPassEncoder/setVertexBuffer
+
+                // x >= 0, x <= fb_width
+                float x = Math.Clamp(viewportRect.X, 0, Framebuffer.Width);
+
+                // y >= 0, y <= fb_height
+                float y = Math.Clamp(viewportRect.Y, 0, Framebuffer.Height);
+
+                // width >= 0, x + width <= fb_width
+                float width = Math.Clamp(viewportRect.Width, 0, Framebuffer.Width - x);
+
+                // height >= 0, y + height <= fb_height
+                float height = Math.Clamp(viewportRect.Height, 0, Framebuffer.Height - y);
+
+                // maxDepth in [0, 1]
+                float maxDepth = Math.Clamp(viewportRect.MaxDepth, 0, 1);
+
+                // minDepth in [0, 1], minDepth less than maxDepth
+                float minDepth = Math.Clamp(viewportRect.MinDepth, 0, maxDepth - 0.0001f);
+
+                wgpuRenderPassEncoderSetViewport(renderPass, x, y, width, height, minDepth, maxDepth);
+                viewportRectValid = true;
+            }
+
+            if (!scissorRectValid)
+            {
+                // See validation rules: https://developer.mozilla.org/en-US/docs/Web/API/GPURenderPassEncoder/setScissorRect
+
+                // x <= fb_width
+                uint x = Math.Min(scissorRect[0], Framebuffer.Width);
+
+                // y <= fb_width
+                uint y = Math.Min(scissorRect[1], Framebuffer.Height);
+
+                // x + width <= fb_width
+                uint width = Math.Min(scissorRect[2], Framebuffer.Width - x);
+
+                // y + height <= fb_height
+                uint height = Math.Min(scissorRect[3], Framebuffer.Height - y);
+
+                wgpuRenderPassEncoderSetScissorRect(renderPass, x, y, width, height);
+                scissorRectValid = true;
+            }
+        }
+
+        private void beginCurrentRenderPass()
         {
             if (renderPass.IsNotNull)
                 return;
@@ -372,7 +506,7 @@ namespace Veldrid.WGPU
                 colourAttachments[i] = new WGPURenderPassColorAttachment
                 {
                     view = textureView.View,
-                    loadOp = validClearColourValues[i] ? WGPULoadOp.Clear : WGPULoadOp.Load,
+                    loadOp = clearColourValuesValid[i] ? WGPULoadOp.Clear : WGPULoadOp.Load,
                     storeOp = WGPUStoreOp.Store,
                     clearValue = new WGPUColor(clearColourValues[i].r, clearColourValues[i].g, clearColourValues[i].b, clearColourValues[i].a),
                 };
@@ -408,7 +542,7 @@ namespace Veldrid.WGPU
 
             renderPass = wgpuCommandEncoderBeginRenderPass(encoder, &renderPassDescriptor);
 
-            Util.ClearArray(validClearColourValues);
+            Util.ClearArray(clearColourValuesValid);
             clearDepthValue = null;
             clearStencilValue = null;
         }
@@ -422,9 +556,36 @@ namespace Veldrid.WGPU
             wgpuRenderPassEncoderRelease(renderPass);
 
             renderPass = default;
+
+            lastGraphicsPipeline = null;
+            Util.ClearArray(graphicsResourceSetsActive);
+            Util.ClearArray(vertexBuffersActive);
+            indexBufferValid = false;
+            viewportRectValid = false;
+            scissorRectValid = false;
         }
 
-        private void beginComputePass()
+        private void preComputeCommand()
+        {
+            beginCurrentComputePass();
+
+            if (computePipeline != lastComputePipeline)
+            {
+                wgpuComputePassEncoderSetPipeline(computePass, computePipeline.ComputePipeline);
+                lastComputePipeline = computePipeline;
+            }
+
+            for (uint i = 0; i < computeResourceSetCount; i++)
+            {
+                if (computeResourceSetsActive[i])
+                    continue;
+
+                activateResourceSet(i, computeResourceSets[i], false);
+                computeResourceSetsActive[i] = true;
+            }
+        }
+
+        private void beginCurrentComputePass()
         {
             if (computePass.IsNotNull)
                 return;
@@ -445,6 +606,38 @@ namespace Veldrid.WGPU
             wgpuComputePassEncoderRelease(computePass);
 
             computePass = default;
+
+            lastComputePipeline = null;
+            Util.ClearArray(computeResourceSetsActive);
+        }
+
+        private void activateResourceSet(uint slot, BoundResourceSetInfo rsi, bool graphics)
+        {
+            WGPUResourceSet wgpuSet = Util.AssertSubtype<ResourceSet, WGPUResourceSet>(rsi.Set);
+
+            int dynamicOffsetCount = rsi.Offsets.Count > 0 ? wgpuSet.Resources.Length : 0;
+            uint* dynamicOffsets = stackalloc uint[dynamicOffsetCount];
+
+            if (dynamicOffsetCount > 0)
+            {
+                uint currentOffsetIndex = 0;
+
+                for (uint i = 0; i < wgpuSet.Resources.Length; i++)
+                {
+                    bool isDynamicBinding = (wgpuSet.Layout.Description.Elements[i].Options & ResourceLayoutElementOptions.DynamicBinding) == ResourceLayoutElementOptions.DynamicBinding;
+
+                    if (!isDynamicBinding)
+                        continue;
+
+                    dynamicOffsets[i] = rsi.Offsets.Get(currentOffsetIndex);
+                    currentOffsetIndex++;
+                }
+            }
+
+            if (graphics)
+                wgpuRenderPassEncoderSetBindGroup(renderPass, slot, wgpuSet.BindGroup, (uint)dynamicOffsetCount, dynamicOffsets);
+            else
+                wgpuComputePassEncoderSetBindGroup(computePass, slot, wgpuSet.BindGroup, (uint)dynamicOffsetCount, dynamicOffsets);
         }
 
         private void resetState()

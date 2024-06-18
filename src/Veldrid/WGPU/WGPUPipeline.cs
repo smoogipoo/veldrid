@@ -13,6 +13,8 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
+        public readonly uint VertexBufferCount;
+
         public readonly WGPUPipelineLayout Layout;
         public readonly WGPURenderPipeline RenderPipeline;
         public readonly WGPUComputePipeline ComputePipeline;
@@ -24,6 +26,8 @@ namespace Veldrid.WGPU
         {
             WGPUShader vertexShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Vertex));
             WGPUShader fragmentShader = Util.AssertSubtype<Shader, WGPUShader>(description.ShaderSet.Shaders.Single(s => s.Stage == ShaderStages.Fragment));
+
+            VertexBufferCount = (uint)description.ShaderSet.VertexLayouts.Length;
 
             WGPUColorTargetState* targets = stackalloc WGPUColorTargetState[description.BlendState.AttachmentStates.Length];
             WGPUBlendState* blendStates = stackalloc WGPUBlendState[description.BlendState.AttachmentStates.Length];

@@ -12,6 +12,8 @@ namespace Veldrid.WGPU
         public override string Name { get; set; }
         public override bool IsDisposed => isDisposed;
 
+        public new IBindableResource[] Resources { get; }
+        public new readonly WGPUResourceLayout Layout;
         public readonly WGPUBindGroup BindGroup;
 
         private bool isDisposed;
@@ -19,7 +21,8 @@ namespace Veldrid.WGPU
         public WGPUResourceSet(WGPUGraphicsDevice gd, ref ResourceSetDescription description)
             : base(ref description)
         {
-            var wgpuResourceLayout = Util.AssertSubtype<ResourceLayout, WGPUResourceLayout>(description.Layout);
+            Resources = Util.ShallowClone(description.BoundResources);
+            Layout = Util.AssertSubtype<ResourceLayout, WGPUResourceLayout>(description.Layout);
 
             WGPUBindGroupEntry* entries = stackalloc WGPUBindGroupEntry[description.BoundResources.Length];
 
@@ -63,7 +66,7 @@ namespace Veldrid.WGPU
             {
                 entryCount = (UIntPtr)description.BoundResources.Length,
                 entries = entries,
-                layout = wgpuResourceLayout.Layout
+                layout = Layout.Layout
             };
 
             BindGroup = wgpuDeviceCreateBindGroup(gd.NativeDevice, &desc);
