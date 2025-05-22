@@ -11,6 +11,15 @@ using NativeLibrary = NativeLibraryLoader.NativeLibrary;
 
 namespace Veldrid.MTL
 {
+    public static class MtlStatics
+    {
+        public static event Action RenderFrame;
+
+        public static readonly SemaphoreSlim FrameReady = new SemaphoreSlim(1, 1);
+
+        internal static void InvokeRenderFrame() => RenderFrame?.Invoke();
+    }
+
     internal unsafe class MtlGraphicsDevice : GraphicsDevice
     {
         public MTLDevice Device => device;
@@ -62,15 +71,15 @@ namespace Veldrid.MTL
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly IntPtr concreteGlobalBlock;
 
-        // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly IntPtr completionHandlerFuncPtr;
-
         private readonly IntPtr completionBlockDescriptor;
         private readonly IntPtr completionBlockLiteral;
 
+        private readonly IntPtr presentCompletionHandlerFuncPtr;
+        private readonly IntPtr presentCompletionBlockDescriptor;
+        private readonly IntPtr presentCompletionBlockLiteral;
+
         private readonly IMtlDisplayLink displayLink;
-        private readonly AutoResetEvent nextFrameReadyEvent;
-        private readonly EventWaitHandle frameEndedEvent = new EventWaitHandle(true, EventResetMode.ManualReset);
         private readonly BackendInfoMetal metalInfo;
         private MTLCommandBuffer latestSubmittedCb;
         private MtlShader unalignedBufferCopyShader;
@@ -78,6 +87,7 @@ namespace Veldrid.MTL
 
         // ReSharper disable once PrivateFieldCanBeConvertedToLocalVariable
         private readonly MTLCommandBufferHandler completionHandler;
+        private readonly MTLCommandBufferHandler presentCompletionHandler;
 
         public MtlGraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription? swapchainDesc)
             : this(options, swapchainDesc, new MetalDeviceOptions())
@@ -125,6 +135,7 @@ namespace Veldrid.MTL
                 libSystem = new NativeLibrary("libSystem.dylib");
                 concreteGlobalBlock = libSystem.LoadFunction("_NSConcreteGlobalBlock");
                 completionHandler = OnCommandBufferCompleted;
+                presentCompletionHandler = OnPresentCompleted;
                 displayLink = new MtlcvDisplayLink();
             }
             else
@@ -134,10 +145,7 @@ namespace Veldrid.MTL
             }
 
             if (displayLink != null)
-            {
-                nextFrameReadyEvent = new AutoResetEvent(true);
                 displayLink.Callback += OnDisplayLinkCallback;
-            }
 
             completionHandlerFuncPtr = Marshal.GetFunctionPointerForDelegate(completionHandler);
             completionBlockDescriptor = Marshal.AllocHGlobal(Unsafe.SizeOf<BlockDescriptor>());
@@ -157,6 +165,19 @@ namespace Veldrid.MTL
                 lock (s_aot_registered_blocks)
                     s_aot_registered_blocks.Add(completionBlockLiteral, this);
             }
+
+            presentCompletionHandlerFuncPtr = Marshal.GetFunctionPointerForDelegate(presentCompletionHandler);
+            presentCompletionBlockDescriptor = Marshal.AllocHGlobal(Unsafe.SizeOf<BlockDescriptor>());
+            var presentDescriptorPtr = (BlockDescriptor*)presentCompletionBlockDescriptor;
+            presentDescriptorPtr->reserved = 0;
+            presentDescriptorPtr->Block_size = (ulong)Unsafe.SizeOf<BlockDescriptor>();
+
+            presentCompletionBlockLiteral = Marshal.AllocHGlobal(Unsafe.SizeOf<BlockLiteral>());
+            var presentBlockPtr = (BlockLiteral*)presentCompletionBlockLiteral;
+            presentBlockPtr->isa = concreteGlobalBlock;
+            presentBlockPtr->flags = (1 << 28) | (1 << 29);
+            presentBlockPtr->invoke = presentCompletionHandlerFuncPtr;
+            presentBlockPtr->descriptor = presentDescriptorPtr;
 
             ResourceFactory = new MtlResourceFactory(this);
             commandQueue = device.newCommandQueue();
@@ -180,6 +201,11 @@ namespace Veldrid.MTL
             metalInfo = new BackendInfoMetal(this);
 
             PostDeviceCreated();
+        }
+
+        private void OnPresentCompleted(IntPtr block, MTLCommandBuffer buffer)
+        {
+            MtlStatics.FrameReady.Release();
         }
 
         public override void UpdateActiveDisplay(int x, int y, int w, int h)
@@ -397,8 +423,7 @@ namespace Veldrid.MTL
 
         private void OnDisplayLinkCallback()
         {
-            nextFrameReadyEvent.Set();
-            frameEndedEvent.WaitOne();
+            MtlStatics.InvokeRenderFrame();
         }
 
         private MappedResource mapBuffer(MtlBuffer buffer, MapMode mode)
@@ -469,9 +494,6 @@ namespace Veldrid.MTL
 
         private protected override void WaitForNextFrameReadyCore()
         {
-            frameEndedEvent.Reset();
-            nextFrameReadyEvent?.WaitOne(TimeSpan.FromSeconds(1)); // Should never time out.
-
             // in iOS, if one frame takes longer than the next V-Sync request, the next frame will be processed immediately rather than being delayed to a subsequent V-Sync request,
             // therefore we will request the next drawable here as a method of waiting until we're ready to draw the next frame.
             if (!MetalFeatures.IsMacOS)
@@ -553,14 +575,13 @@ namespace Veldrid.MTL
                 using (NSAutoreleasePool.Begin())
                 {
                     var submitCb = commandQueue.commandBuffer();
+                    submitCb.addCompletedHandler(presentCompletionBlockLiteral);
                     submitCb.presentDrawable(currentDrawablePtr);
                     submitCb.commit();
                 }
 
                 mtlSc.InvalidateDrawable();
             }
-
-            frameEndedEvent.Set();
         }
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
