@@ -22,7 +22,7 @@ namespace Veldrid.SDL3
         private bool isDisposed;
 
         public SDL3SwapchainFramebuffer(SDL3GraphicsDevice gd)
-            : base(null, [new FramebufferAttachmentDescription(new SDL3ExternalTexture(), 0)])
+            : base(null, [new FramebufferAttachmentDescription(new SDL3ExternalTexture(SDL3Formats.SDLToVdTextureFormat(SDL_GetGPUSwapchainTextureFormat(gd.Device, gd.Window))), 0)])
         {
             this.gd = gd;
             sdlTexture = Util.AssertSubtype<Texture, SDL3ExternalTexture>(ColorTargets[0].Target);

@@ -33,6 +33,15 @@ namespace Veldrid.SDL3
         private TextureSampleCount sampleCount;
         private bool isDisposed;
 
+        public SDL3ExternalTexture()
+        {
+        }
+
+        public SDL3ExternalTexture(PixelFormat format)
+        {
+            this.format = format;
+        }
+
         public void SetNativeTexture(SDL_GPUTexture* texture, ref TextureDescription td)
         {
             this.texture = texture;
