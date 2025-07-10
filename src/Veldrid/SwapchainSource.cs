@@ -1,4 +1,5 @@
 ﻿using System;
+using SDL;
 
 namespace Veldrid
 {
@@ -117,6 +118,21 @@ namespace Veldrid
         public static SwapchainSource CreateNSView(IntPtr nsView)
         {
             return new NSViewSwapchainSource(nsView);
+        }
+
+        public static unsafe SwapchainSource CreateSDL3(SDL_Window* window)
+        {
+            return new SDL3SwapchainSource(window);
+        }
+    }
+
+    internal unsafe class SDL3SwapchainSource : SwapchainSource
+    {
+        public SDL_Window* Window { get; }
+
+        public SDL3SwapchainSource(SDL_Window* window)
+        {
+            Window = window;
         }
     }
 

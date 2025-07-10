@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Veldrid.D3D11;
 using Veldrid.MTL;
 using Veldrid.OpenGL;
+using Veldrid.SDL3;
 using Veldrid.Vk;
 
 namespace Veldrid
@@ -207,6 +207,12 @@ namespace Veldrid
                 case GraphicsBackend.OpenGLES:
 #if !EXCLUDE_OPENGL_BACKEND
                     return !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+#else
+                    return false;
+#endif
+                case GraphicsBackend.SDL3:
+#if !EXCLUDE_SDL3_BACKEND
+                    return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 #else
                     return false;
 #endif
@@ -1397,6 +1403,14 @@ namespace Veldrid
 
             return new MtlGraphicsDevice(options, swapchainDesc, metalOptions);
         }
+#endif
+
+#if !EXCLUDE_METAL_BACKEND
+        public static GraphicsDevice CreateSDL3(GraphicsDeviceOptions options, SwapchainDescription swapchainDescription)
+        {
+            return new SDL3GraphicsDevice(options, swapchainDescription);
+        }
+
 #endif
     }
 }
