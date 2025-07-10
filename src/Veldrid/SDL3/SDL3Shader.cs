@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using SDL;
+using Veldrid.Vk;
 using static SDL.SDL3;
 
 namespace Veldrid.SDL3
@@ -32,7 +33,7 @@ namespace Veldrid.SDL3
                     {
                         code_size = (nuint)ShaderBytes.Length,
                         code = codePtr,
-                        entrypoint = (byte*)entryPoint,
+                        entrypoint = new FixedUtf8String(sd.EntryPoint),
                         stage = SDL3Formats.VdToSDLShaderStage(sd.Stage),
                         format = SDL3Formats.VdToSDLShaderFormat(gd.BackendType)
                     };
