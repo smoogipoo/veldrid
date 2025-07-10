@@ -351,7 +351,7 @@ namespace Veldrid.SDL3
                 PrimitiveTopology.TriangleList => SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
                 PrimitiveTopology.TriangleStrip => SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_TRIANGLESTRIP,
                 PrimitiveTopology.LineList => SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_LINELIST,
-                PrimitiveTopology.LineStrip => SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_LINELIST,
+                PrimitiveTopology.LineStrip => SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_LINESTRIP,
                 PrimitiveTopology.PointList => SDL_GPUPrimitiveType.SDL_GPU_PRIMITIVETYPE_POINTLIST,
                 _ => throw Illegal.Value<PrimitiveTopology>()
             };
