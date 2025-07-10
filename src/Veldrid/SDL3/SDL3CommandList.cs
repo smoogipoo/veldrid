@@ -121,10 +121,11 @@ namespace Veldrid.SDL3
                         SDL3Buffer sdlBuffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource);
                         SDL_GPUBuffer* nativePtr = sdlBuffer.Buffer;
 
-                        if (element.Stages == ShaderStages.Vertex)
-                            SDL_BindGPUVertexStorageBuffers(renderPass, (uint)i, &nativePtr, 1);
-                        else
-                            SDL_BindGPUFragmentStorageBuffers(renderPass, (uint)i, &nativePtr, 1);
+                        if ((element.Stages & ShaderStages.Vertex) > 0)
+                            SDL_BindGPUVertexStorageBuffers(renderPass, slot, &nativePtr, 1);
+
+                        if ((element.Stages & ShaderStages.Fragment) > 0)
+                            SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &nativePtr, 1);
 
                         break;
                     }
@@ -135,10 +136,11 @@ namespace Veldrid.SDL3
                         SDL3Texture sdlTexture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource);
                         SDL_GPUTexture* nativePtr = sdlTexture.Texture;
 
-                        if (element.Stages == ShaderStages.Vertex)
-                            SDL_BindGPUVertexStorageTextures(renderPass, (uint)i, &nativePtr, 1);
-                        else
-                            SDL_BindGPUFragmentStorageTextures(renderPass, (uint)i, &nativePtr, 1);
+                        if ((element.Stages & ShaderStages.Vertex) > 0)
+                            SDL_BindGPUVertexStorageTextures(renderPass, slot, &nativePtr, 1);
+
+                        if ((element.Stages & ShaderStages.Fragment) > 0)
+                            SDL_BindGPUFragmentStorageTextures(renderPass, slot, &nativePtr, 1);
 
                         break;
                     }
@@ -152,10 +154,20 @@ namespace Veldrid.SDL3
                             sampler = sdlSampler.Sampler
                         };
 
-                        if (element.Stages == ShaderStages.Vertex)
-                            SDL_BindGPUVertexSamplers(renderPass, (uint)i, &binding, 1);
-                        else
-                            SDL_BindGPUFragmentSamplers(renderPass, (uint)i, &binding, 1);
+                        for (int j = 0; j < sdlRs.Layout.Elements.Length; j++)
+                        {
+                            ResourceLayoutElementDescription element2 = sdlRs.Layout.Elements[j];
+                            IBindableResource resource2 = sdlRs.BoundResources[j];
+
+                            if (element2.Kind == ResourceKind.TextureReadOnly || element2.Kind == ResourceKind.TextureReadWrite)
+                                binding.texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource2).Texture;
+                        }
+
+                        if ((element.Stages & ShaderStages.Vertex) > 0)
+                            SDL_BindGPUVertexSamplers(renderPass, slot, &binding, 1);
+
+                        if ((element.Stages & ShaderStages.Fragment) > 0)
+                            SDL_BindGPUFragmentSamplers(renderPass, slot, &binding, 1);
 
                         break;
                     }
