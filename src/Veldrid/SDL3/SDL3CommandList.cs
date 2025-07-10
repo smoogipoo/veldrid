@@ -246,7 +246,7 @@ namespace Veldrid.SDL3
         {
             beginRenderPass();
 
-            SDL3Texture sdlSource = Util.AssertSubtype<Texture, SDL3Texture>(source);
+            SDL3TextureBase sdlSource = Util.AssertSubtype<Texture, SDL3TextureBase>(source);
             SDL3Texture sdlDestination = Util.AssertSubtype<Texture, SDL3Texture>(destination);
 
             SDL_GPUColorTargetInfo colorTarget = new SDL_GPUColorTargetInfo
@@ -272,21 +272,41 @@ namespace Veldrid.SDL3
 
             SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
-            SDL_GPUBufferLocation srcLocation = new SDL_GPUBufferLocation
+            if ((source.Usage & BufferUsage.Staging) > 0)
             {
-                buffer = sdlSource.Buffer,
-                offset = sourceOffset
-            };
+                SDL_GPUTransferBufferLocation srcLocation = new SDL_GPUTransferBufferLocation
+                {
+                    transfer_buffer = sdlSource.TransferBuffer,
+                    offset = sourceOffset
+                };
 
-            SDL_GPUBufferLocation dstLocation = new SDL_GPUBufferLocation
+                SDL_GPUBufferRegion dstRegion = new SDL_GPUBufferRegion
+                {
+                    buffer = sdlDestination.Buffer,
+                    offset = destinationOffset,
+                    size = sizeInBytes
+                };
+
+                SDL_UploadToGPUBuffer(copyPass, &srcLocation, &dstRegion, true);
+            }
+            else
             {
-                buffer = sdlDestination.Buffer,
-                offset = destinationOffset
-            };
+                SDL_GPUBufferLocation srcLocation = new SDL_GPUBufferLocation
+                {
+                    buffer = sdlSource.Buffer,
+                    offset = sourceOffset
+                };
 
-            SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, sizeInBytes, true);
+                SDL_GPUBufferLocation dstLocation = new SDL_GPUBufferLocation
+                {
+                    buffer = sdlDestination.Buffer,
+                    offset = destinationOffset
+                };
+
+                SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, sizeInBytes, true);
+            }
+
             SDL_EndGPUCopyPass(copyPass);
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
         }
 
         protected override void CopyTextureCore(Texture source, uint srcX, uint srcY, uint srcZ, uint srcMipLevel, uint srcBaseArrayLayer, Texture destination, uint dstX, uint dstY, uint dstZ,
@@ -299,31 +319,59 @@ namespace Veldrid.SDL3
             SDL3Texture sdlSource = Util.AssertSubtype<Texture, SDL3Texture>(source);
             SDL3Texture sdlDestination = Util.AssertSubtype<Texture, SDL3Texture>(destination);
 
-            SDL_GPUTextureLocation srcLocation = new SDL_GPUTextureLocation
-            {
-                texture = sdlSource.Texture,
-                mip_level = srcMipLevel,
-                layer = srcBaseArrayLayer,
-                x = srcX,
-                y = srcY,
-                z = srcZ
-            };
-
-            SDL_GPUTextureLocation dstLocation = new SDL_GPUTextureLocation
-            {
-                texture = sdlDestination.Texture,
-                mip_level = dstMipLevel,
-                layer = dstBaseArrayLayer,
-                x = dstX,
-                y = dstY,
-                z = dstZ
-            };
-
             SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
-            SDL_CopyGPUTextureToTexture(copyPass, &srcLocation, &dstLocation, width, height, depth, true);
+            if ((source.Usage & TextureUsage.Staging) > 0)
+            {
+                SDL_GPUTextureTransferInfo srcInfo = new SDL_GPUTextureTransferInfo
+                {
+                    transfer_buffer = sdlSource.TransferBuffer,
+                    offset = FormatHelpers.GetDepthPitch(FormatHelpers.GetRowPitch(source.Width, source.Format), srcY, source.Format) + FormatHelpers.GetRowPitch(srcX, source.Format),
+                    pixels_per_row = width,
+                    rows_per_layer = height
+                };
+
+                SDL_GPUTextureRegion dstRegion = new SDL_GPUTextureRegion
+                {
+                    texture = sdlDestination.Texture,
+                    mip_level = dstMipLevel,
+                    layer = dstBaseArrayLayer,
+                    x = dstX,
+                    y = dstY,
+                    z = dstZ,
+                    w = width,
+                    h = height,
+                    d = depth
+                };
+
+                SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, true);
+            }
+            else
+            {
+                SDL_GPUTextureLocation srcLocation = new SDL_GPUTextureLocation
+                {
+                    texture = sdlSource.Texture,
+                    mip_level = srcMipLevel,
+                    layer = srcBaseArrayLayer,
+                    x = srcX,
+                    y = srcY,
+                    z = srcZ
+                };
+
+                SDL_GPUTextureLocation dstLocation = new SDL_GPUTextureLocation
+                {
+                    texture = sdlDestination.Texture,
+                    mip_level = dstMipLevel,
+                    layer = dstBaseArrayLayer,
+                    x = dstX,
+                    y = dstY,
+                    z = dstZ
+                };
+
+                SDL_CopyGPUTextureToTexture(copyPass, &srcLocation, &dstLocation, width, height, depth, true);
+            }
+
             SDL_EndGPUCopyPass(copyPass);
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
         }
 
         private protected override void SetPipelineCore(Pipeline pipeline)
@@ -416,26 +464,24 @@ namespace Veldrid.SDL3
 
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
-            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
-
-            bool mustDisposeSrcBuffer;
-            SDL_GPUTransferBufferLocation srcRegion;
-            SDL_GPUTransferBuffer* srcBuffer;
+            bool mustDisposeTransferBuffer;
+            SDL_GPUTransferBufferLocation transferRegion;
+            SDL_GPUTransferBuffer* transferBuffer;
 
             if ((buffer.Usage & (BufferUsage.Staging | BufferUsage.Dynamic)) > 0)
             {
-                mustDisposeSrcBuffer = false;
+                mustDisposeTransferBuffer = false;
 
-                srcBuffer = sdlBuffer.TransferBuffer;
-                srcRegion = new SDL_GPUTransferBufferLocation
+                transferBuffer = sdlBuffer.TransferBuffer;
+                transferRegion = new SDL_GPUTransferBufferLocation
                 {
-                    transfer_buffer = srcBuffer,
+                    transfer_buffer = transferBuffer,
                     offset = bufferOffsetInBytes
                 };
             }
             else
             {
-                mustDisposeSrcBuffer = true;
+                mustDisposeTransferBuffer = true;
 
                 SDL_GPUTransferBufferCreateInfo ci = new SDL_GPUTransferBufferCreateInfo
                 {
@@ -443,16 +489,19 @@ namespace Veldrid.SDL3
                     size = sizeInBytes,
                 };
 
-                srcBuffer = SDL_CreateGPUTransferBuffer(gd.Device, &ci);
-                srcRegion = new SDL_GPUTransferBufferLocation
+                transferBuffer = SDL_CreateGPUTransferBuffer(gd.Device, &ci);
+                transferRegion = new SDL_GPUTransferBufferLocation
                 {
-                    transfer_buffer = srcBuffer
+                    transfer_buffer = transferBuffer,
+                    offset = 0
                 };
             }
 
-            byte* mapped = (byte*)SDL_MapGPUTransferBuffer(gd.Device, sdlBuffer.TransferBuffer, true);
-            Unsafe.CopyBlock(mapped + bufferOffsetInBytes, (byte*)source, sizeInBytes);
-            SDL_UnmapGPUTransferBuffer(gd.Device, sdlBuffer.TransferBuffer);
+            byte* mapped = (byte*)SDL_MapGPUTransferBuffer(gd.Device, transferBuffer, true);
+            Unsafe.CopyBlock(mapped + transferRegion.offset, (byte*)source, sizeInBytes);
+            SDL_UnmapGPUTransferBuffer(gd.Device, transferBuffer);
+
+            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
             SDL_GPUBufferRegion dstRegion = new SDL_GPUBufferRegion
             {
@@ -461,12 +510,11 @@ namespace Veldrid.SDL3
                 size = sizeInBytes
             };
 
-            SDL_UploadToGPUBuffer(copyPass, &srcRegion, &dstRegion, true);
+            SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, true);
             SDL_EndGPUCopyPass(copyPass);
-            SDL_SubmitGPUCommandBuffer(commandBuffer);
 
-            if (mustDisposeSrcBuffer)
-                SDL_ReleaseGPUTransferBuffer(gd.Device, srcBuffer);
+            if (mustDisposeTransferBuffer)
+                SDL_ReleaseGPUTransferBuffer(gd.Device, transferBuffer);
         }
 
         private protected override void GenerateMipmapsCore(Texture texture)
