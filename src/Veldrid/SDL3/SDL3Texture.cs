@@ -41,7 +41,7 @@ namespace Veldrid.SDL3
             SampleCount = td.SampleCount;
 
             // CPU buffer if staging
-            if ((td.Usage & TextureUsage.Staging) == 0)
+            if ((td.Usage & TextureUsage.Staging) > 0)
             {
                 SDL_GPUTransferBufferCreateInfo uploadInfo = new SDL_GPUTransferBufferCreateInfo
                 {
