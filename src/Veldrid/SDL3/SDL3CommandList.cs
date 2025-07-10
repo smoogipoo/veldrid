@@ -18,6 +18,7 @@ namespace Veldrid.SDL3
         private SDL_GPUComputePass* computePass;
         private SDL_GPUFence* completionFence;
 
+        private bool hasAcquiredSwapchainTexture;
         private SDL_FColor? clearColor;
         private float? clearDepth;
         private byte? clearStencil;
@@ -48,7 +49,9 @@ namespace Veldrid.SDL3
         {
             endRenderPass();
             endComputePass();
+
             completionFence = SDL_SubmitGPUCommandBufferAndAcquireFence(commandBuffer);
+            hasAcquiredSwapchainTexture = false;
         }
 
         public override void SetViewport(uint index, ref Viewport viewport)
@@ -214,6 +217,12 @@ namespace Veldrid.SDL3
             endRenderPass();
 
             Framebuffer = fb;
+
+            if (Framebuffer is SDL3SwapchainFramebuffer swapchainFramebuffer && !hasAcquiredSwapchainTexture)
+            {
+                swapchainFramebuffer.AcquireTexture(commandBuffer);
+                hasAcquiredSwapchainTexture = true;
+            }
 
             beginRenderPass();
         }
@@ -558,7 +567,7 @@ namespace Veldrid.SDL3
             {
                 FramebufferAttachment attachment = sdlFb.ColorTargets[i];
 
-                SDL3Texture sdlTarget = Util.AssertSubtype<Texture, SDL3Texture>(attachment.Target);
+                SDL3TextureBase sdlTarget = Util.AssertSubtype<Texture, SDL3TextureBase>(attachment.Target);
 
                 colorTargets[i] = new SDL_GPUColorTargetInfo
                 {
@@ -575,7 +584,7 @@ namespace Veldrid.SDL3
 
             if (Framebuffer.DepthTarget.HasValue)
             {
-                SDL3Texture sdlTarget = Util.AssertSubtype<Texture, SDL3Texture>(Framebuffer.DepthTarget.Value.Target);
+                SDL3TextureBase sdlTarget = Util.AssertSubtype<Texture, SDL3TextureBase>(Framebuffer.DepthTarget.Value.Target);
 
                 SDL_GPUDepthStencilTargetInfo depthTarget = new SDL_GPUDepthStencilTargetInfo
                 {

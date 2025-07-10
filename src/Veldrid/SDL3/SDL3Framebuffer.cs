@@ -1,6 +1,8 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System.Collections.Generic;
+
 namespace Veldrid.SDL3
 {
     public unsafe class SDL3Framebuffer : Framebuffer
@@ -9,7 +11,8 @@ namespace Veldrid.SDL3
 
         private bool isDisposed;
 
-        protected SDL3Framebuffer(SDL3GraphicsDevice gd)
+        protected SDL3Framebuffer(FramebufferAttachmentDescription? depthTargetDesc, IReadOnlyList<FramebufferAttachmentDescription> colorTargetDescs)
+            : base(depthTargetDesc, colorTargetDescs)
         {
         }
 

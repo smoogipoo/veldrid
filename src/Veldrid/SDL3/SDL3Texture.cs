@@ -6,7 +6,12 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3Texture : Texture
+    public abstract unsafe class SDL3TextureBase : Texture
+    {
+        public abstract SDL_GPUTexture* Texture { get; }
+    }
+
+    public unsafe class SDL3Texture : SDL3TextureBase
     {
         public override PixelFormat Format { get; }
         public override uint Width { get; }
@@ -18,8 +23,8 @@ namespace Veldrid.SDL3
         public override TextureType Type { get; }
         public override TextureSampleCount SampleCount { get; }
         public override string Name { get; set; }
+        public override SDL_GPUTexture* Texture { get; }
 
-        public readonly SDL_GPUTexture* Texture;
         public readonly SDL_GPUTransferBuffer* TransferBuffer;
 
         private readonly SDL3GraphicsDevice gd;

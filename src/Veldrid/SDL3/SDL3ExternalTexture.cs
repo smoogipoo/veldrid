@@ -5,7 +5,7 @@ using SDL;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3ExternalTexture : Texture
+    public unsafe class SDL3ExternalTexture : SDL3TextureBase
     {
         public override PixelFormat Format => format;
         public override uint Width => width;
@@ -19,22 +19,23 @@ namespace Veldrid.SDL3
 
         public override string Name { get; set; }
 
-        public SDL_GPUTexture* Texture { get; private set; }
+        public override SDL_GPUTexture* Texture => texture;
 
+        private SDL_GPUTexture* texture;
         private PixelFormat format;
         private uint width;
         private uint height;
-        private uint depth;
-        private uint mipLevels;
-        private uint arrayLayers;
-        private TextureUsage usage;
-        private TextureType type;
+        private uint depth = 1;
+        private uint mipLevels = 1;
+        private uint arrayLayers = 1;
+        private TextureUsage usage = TextureUsage.RenderTarget;
+        private TextureType type = TextureType.Texture2D;
         private TextureSampleCount sampleCount;
         private bool isDisposed;
 
         public void SetNativeTexture(SDL_GPUTexture* texture, ref TextureDescription td)
         {
-            Texture = texture;
+            this.texture = texture;
 
             format = td.Format;
             width = td.Width;

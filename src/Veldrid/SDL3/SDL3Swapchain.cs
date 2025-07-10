@@ -1,8 +1,6 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
-using System;
-using System.Threading;
 using SDL;
 using static SDL.SDL3;
 
@@ -15,8 +13,6 @@ namespace Veldrid.SDL3
         private readonly SDL3GraphicsDevice gd;
         private readonly SDL3SwapchainFramebuffer framebuffer;
         private readonly bool colorSrgb;
-        private uint width;
-        private uint height;
         private bool syncToVBlank;
         private bool allowTearing;
         private bool isDisposed;
@@ -62,31 +58,7 @@ namespace Veldrid.SDL3
 
         public override void Resize(uint width, uint height)
         {
-            this.width = width;
-            this.height = height;
-        }
-
-        public void AcquireTexture(SDL_GPUCommandBuffer* commandBuffer)
-        {
-            while (true)
-            {
-                SDL_GPUTexture* tex;
-                uint texWidth = width;
-                uint texHeight = height;
-
-                if (!SDL_WaitAndAcquireGPUSwapchainTexture(commandBuffer, gd.Window, &tex, &texWidth, &texHeight))
-                    throw new InvalidOperationException("Failed to retrieve a swapchain texture.");
-
-                if (tex != null)
-                {
-                    framebuffer.SetTexture(tex, texWidth, texHeight);
-                    break;
-                }
-
-                // Swapchain texture can be null while the window is minimized.
-                // Todo: Instead of this, we should early exit out of DrawFrame().
-                Thread.Sleep(10);
-            }
+            framebuffer.Resize(width, height);
         }
 
         private void setParameters()
