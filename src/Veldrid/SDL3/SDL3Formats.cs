@@ -151,11 +151,12 @@ namespace Veldrid.SDL3
 
         public static SDL_GPUShaderStage VdToSDLShaderStage(ShaderStages stage)
         {
-            if ((stage & ShaderStages.Fragment) > 0)
-                return SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT;
-
-            // I suppose this is valid for GEO/TCS/TES?
-            return SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX;
+            return stage switch
+            {
+                ShaderStages.Vertex => SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_VERTEX,
+                ShaderStages.Fragment => SDL_GPUShaderStage.SDL_GPU_SHADERSTAGE_FRAGMENT,
+                _ => throw Illegal.Value<ShaderStages>()
+            };
         }
 
         public static SDL_GPUTextureUsageFlags VdToSDLTextureUsage(TextureUsage usage)

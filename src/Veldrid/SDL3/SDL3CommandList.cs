@@ -433,6 +433,8 @@ namespace Veldrid.SDL3
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
+            endRenderPass();
+
             this.clearColor = new SDL_FColor
             {
                 r = clearColor.R,
@@ -446,6 +448,8 @@ namespace Veldrid.SDL3
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
+            endRenderPass();
+
             clearDepth = depth;
             clearStencil = stencil;
 
@@ -552,10 +556,10 @@ namespace Veldrid.SDL3
 
         private void beginRenderPass()
         {
+            endComputePass();
+
             if (renderPass != null)
                 return;
-
-            endComputePass();
 
             if (Framebuffer == null)
                 return;
@@ -628,10 +632,10 @@ namespace Veldrid.SDL3
 
         private void beginComputePass()
         {
+            endRenderPass();
+
             if (computePass != null)
                 return;
-
-            endRenderPass();
 
             // computePass = SDL_BeginGPUComputePass()
         }
