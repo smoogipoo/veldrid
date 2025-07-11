@@ -365,7 +365,7 @@ namespace Veldrid.SDL3
                     d = depth
                 };
 
-                SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, true);
+                SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, false);
             }
             else
             {
@@ -389,7 +389,7 @@ namespace Veldrid.SDL3
                     z = dstZ
                 };
 
-                SDL_CopyGPUTextureToTexture(copyPass, &srcLocation, &dstLocation, width, height, depth, true);
+                SDL_CopyGPUTextureToTexture(copyPass, &srcLocation, &dstLocation, width, height, depth, false);
             }
 
             SDL_EndGPUCopyPass(copyPass);
@@ -528,7 +528,7 @@ namespace Veldrid.SDL3
                 };
             }
 
-            byte* mapped = (byte*)SDL_MapGPUTransferBuffer(gd.Device, transferBuffer, true);
+            byte* mapped = (byte*)SDL_MapGPUTransferBuffer(gd.Device, transferBuffer, mustDisposeTransferBuffer);
             Unsafe.CopyBlock(mapped + transferRegion.offset, (byte*)source, sizeInBytes);
             SDL_UnmapGPUTransferBuffer(gd.Device, transferBuffer);
 
@@ -541,7 +541,7 @@ namespace Veldrid.SDL3
                 size = sizeInBytes
             };
 
-            SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, true);
+            SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, false);
             SDL_EndGPUCopyPass(copyPass);
 
             if (mustDisposeTransferBuffer)

@@ -210,7 +210,7 @@ namespace Veldrid.SDL3
             {
                 uint offset = FormatHelpers.GetDepthPitch(FormatHelpers.GetRowPitch(texture.Width, texture.Format), y, texture.Format) + FormatHelpers.GetRowPitch(x, texture.Format);
 
-                byte* mapped = (byte*)SDL_MapGPUTransferBuffer(Device, sdlTexture.TransferBuffer, true);
+                byte* mapped = (byte*)SDL_MapGPUTransferBuffer(Device, sdlTexture.TransferBuffer, false);
                 Unsafe.CopyBlock(mapped + offset, (byte*)source, sizeInBytes);
                 SDL_UnmapGPUTransferBuffer(Device, sdlTexture.TransferBuffer);
             }
@@ -251,7 +251,7 @@ namespace Veldrid.SDL3
                 SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(Device);
                 SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
-                SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, true);
+                SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, false);
                 SDL_EndGPUCopyPass(copyPass);
                 SDL_SubmitGPUCommandBuffer(commandBuffer);
                 SDL_ReleaseGPUTransferBuffer(Device, copyBuffer);
@@ -295,7 +295,7 @@ namespace Veldrid.SDL3
                 };
             }
 
-            byte* mapped = (byte*)SDL_MapGPUTransferBuffer(Device, transferBuffer, true);
+            byte* mapped = (byte*)SDL_MapGPUTransferBuffer(Device, transferBuffer, mustDisposeTransferBuffer);
             Unsafe.CopyBlock(mapped + transferRegion.offset, (byte*)source, sizeInBytes);
             SDL_UnmapGPUTransferBuffer(Device, transferBuffer);
 
@@ -309,7 +309,7 @@ namespace Veldrid.SDL3
                 size = sizeInBytes
             };
 
-            SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, true);
+            SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, false);
             SDL_EndGPUCopyPass(copyPass);
             SDL_SubmitGPUCommandBuffer(commandBuffer);
             if (mustDisposeTransferBuffer)
