@@ -107,71 +107,64 @@ namespace Veldrid.SDL3
 
             SDL3ResourceSet sdlRs = Util.AssertSubtype<ResourceSet, SDL3ResourceSet>(rs);
 
+            SDL_GPUBuffer* buffer = null;
+            SDL_GPUTexture* texture = null;
+            SDL_GPUSampler* sampler = null;
+            ShaderStages stages = ShaderStages.None;
+
             for (int i = 0; i < sdlRs.Layout.Elements.Length; i++)
             {
                 ResourceLayoutElementDescription element = sdlRs.Layout.Elements[i];
                 IBindableResource resource = sdlRs.BoundResources[i];
+                stages = element.Stages;
 
                 switch (element.Kind)
                 {
                     case ResourceKind.UniformBuffer:
                     case ResourceKind.StructuredBufferReadOnly:
                     case ResourceKind.StructuredBufferReadWrite:
-                    {
-                        SDL3Buffer sdlBuffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource);
-                        SDL_GPUBuffer* nativePtr = sdlBuffer.Buffer;
-
-                        if ((element.Stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexStorageBuffers(renderPass, slot, &nativePtr, 1);
-
-                        if ((element.Stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &nativePtr, 1);
-
+                        buffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource).Buffer;
                         break;
-                    }
 
                     case ResourceKind.TextureReadOnly:
                     case ResourceKind.TextureReadWrite:
-                    {
-                        SDL3Texture sdlTexture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource);
-                        SDL_GPUTexture* nativePtr = sdlTexture.Texture;
-
-                        if ((element.Stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexStorageTextures(renderPass, slot, &nativePtr, 1);
-
-                        if ((element.Stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentStorageTextures(renderPass, slot, &nativePtr, 1);
-
+                        texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource).Texture;
                         break;
-                    }
 
                     case ResourceKind.Sampler:
-                    {
-                        SDL3Sampler sdlSampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource);
-
-                        SDL_GPUTextureSamplerBinding binding = new SDL_GPUTextureSamplerBinding
-                        {
-                            sampler = sdlSampler.Sampler
-                        };
-
-                        for (int j = 0; j < sdlRs.Layout.Elements.Length; j++)
-                        {
-                            ResourceLayoutElementDescription element2 = sdlRs.Layout.Elements[j];
-                            IBindableResource resource2 = sdlRs.BoundResources[j];
-
-                            if (element2.Kind == ResourceKind.TextureReadOnly || element2.Kind == ResourceKind.TextureReadWrite)
-                                binding.texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource2).Texture;
-                        }
-
-                        if ((element.Stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexSamplers(renderPass, slot, &binding, 1);
-
-                        if ((element.Stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentSamplers(renderPass, slot, &binding, 1);
-
+                        sampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource).Sampler;
                         break;
-                    }
                 }
+            }
+
+            if (buffer != null)
+            {
+                if ((stages & ShaderStages.Vertex) > 0)
+                    SDL_BindGPUVertexStorageBuffers(renderPass, slot, &buffer, 1);
+                if ((stages & ShaderStages.Fragment) > 0)
+                    SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &buffer, 1);
+            }
+
+            if (texture != null)
+            {
+                if (sampler != null)
+                {
+                    SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
+                    {
+                        sampler = sampler,
+                        texture = texture
+                    };
+
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
+                }
+
+                if ((stages & ShaderStages.Vertex) > 0)
+                    SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
+                if ((stages & ShaderStages.Fragment) > 0)
+                    SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
             }
         }
 
@@ -180,6 +173,10 @@ namespace Veldrid.SDL3
             beginComputePass();
 
             SDL3ResourceSet sdlSet = Util.AssertSubtype<ResourceSet, SDL3ResourceSet>(set);
+
+            SDL_GPUBuffer* buffer = null;
+            SDL_GPUTexture* texture = null;
+            SDL_GPUSampler* sampler = null;
 
             for (int i = 0; i < sdlSet.Layout.Elements.Length; i++)
             {
@@ -191,37 +188,37 @@ namespace Veldrid.SDL3
                     case ResourceKind.UniformBuffer:
                     case ResourceKind.StructuredBufferReadOnly:
                     case ResourceKind.StructuredBufferReadWrite:
-                    {
-                        SDL3Buffer sdlBuffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource);
-                        SDL_GPUBuffer* nativePtr = sdlBuffer.Buffer;
-
-                        SDL_BindGPUComputeStorageBuffers(computePass, (uint)i, &nativePtr, 1);
+                        buffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource).Buffer;
                         break;
-                    }
 
                     case ResourceKind.TextureReadOnly:
                     case ResourceKind.TextureReadWrite:
-                    {
-                        SDL3Texture sdlTexture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource);
-                        SDL_GPUTexture* nativePtr = sdlTexture.Texture;
-
-                        SDL_BindGPUComputeStorageTextures(computePass, (uint)i, &nativePtr, 1);
+                        texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource).Texture;
                         break;
-                    }
 
                     case ResourceKind.Sampler:
-                    {
-                        SDL3Sampler sdlSampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource);
-
-                        SDL_GPUTextureSamplerBinding binding = new SDL_GPUTextureSamplerBinding
-                        {
-                            sampler = sdlSampler.Sampler
-                        };
-
-                        SDL_BindGPUComputeSamplers(computePass, (uint)i, &binding, 1);
+                        sampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource).Sampler;
                         break;
-                    }
                 }
+            }
+
+            if (buffer != null)
+                SDL_BindGPUComputeStorageBuffers(computePass, slot, &buffer, 1);
+
+            if (texture != null)
+            {
+                if (sampler != null)
+                {
+                    SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
+                    {
+                        sampler = sampler,
+                        texture = texture
+                    };
+
+                    SDL_BindGPUComputeSamplers(computePass, slot, &pairBinding, 1);
+                }
+
+                SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
             }
         }
 
