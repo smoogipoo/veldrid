@@ -19,8 +19,6 @@ namespace Veldrid.SDL3
         private SDL_GPUFence* completionFence;
 
         private bool hasAcquiredSwapchainTexture;
-        private bool hasAcquiredFramebuffer;
-        private bool hasIndexBuffer;
         private SDL_FColor? clearColor;
         private float? clearDepth;
         private byte? clearStencil;
@@ -45,6 +43,7 @@ namespace Veldrid.SDL3
         public override void Begin()
         {
             commandBuffer = SDL_AcquireGPUCommandBuffer(gd.Device);
+            ClearCachedState();
         }
 
         public override void End()
@@ -228,7 +227,6 @@ namespace Veldrid.SDL3
             endRenderPass();
 
             Framebuffer = fb;
-            hasAcquiredFramebuffer = true;
 
             if (Framebuffer is SDL3SwapchainFramebuffer swapchainFramebuffer && !hasAcquiredSwapchainTexture)
             {
@@ -441,7 +439,6 @@ namespace Veldrid.SDL3
             };
 
             SDL_BindGPUIndexBuffer(renderPass, &binding, SDL3Formats.VdToSDLIndexElementSize(format));
-            hasIndexBuffer = true;
         }
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
@@ -479,11 +476,6 @@ namespace Veldrid.SDL3
         private protected override void DrawIndexedCore(uint indexCount, uint instanceCount, uint indexStart, int vertexOffset, uint instanceStart)
         {
             beginRenderPass();
-
-            if (!hasIndexBuffer)
-            {
-                return;
-            }
 
             SDL_DrawGPUIndexedPrimitives(renderPass, indexCount, instanceCount, indexStart, vertexOffset, instanceStart);
         }
@@ -579,7 +571,7 @@ namespace Veldrid.SDL3
             if (renderPass != null)
                 return;
 
-            if (!hasAcquiredFramebuffer)
+            if (Framebuffer == null)
                 return;
 
             SDL3Framebuffer sdlFb = Util.AssertSubtype<Framebuffer, SDL3Framebuffer>(Framebuffer);
@@ -640,13 +632,6 @@ namespace Veldrid.SDL3
 
             SDL_EndGPURenderPass(renderPass);
             renderPass = null;
-
-            // The next render pass may only start after it has acquired a framebuffer.
-            hasAcquiredFramebuffer = false;
-            hasIndexBuffer = false;
-            clearColor = null;
-            clearDepth = null;
-            clearStencil = null;
         }
 
         private void beginComputePass()
