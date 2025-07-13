@@ -96,8 +96,6 @@ namespace Veldrid.SDL3
 
         public override void SetViewport(uint index, ref Viewport viewport)
         {
-            ensureNoRenderPass();
-
             currentViewport = new SDL_GPUViewport
             {
                 x = viewport.X,
@@ -111,8 +109,6 @@ namespace Veldrid.SDL3
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
         {
-            ensureNoRenderPass();
-
             currentScissor = new SDL_Rect
             {
                 x = (int)x,
@@ -327,8 +323,6 @@ namespace Veldrid.SDL3
 
         private protected override void SetPipelineCore(Pipeline pipeline)
         {
-            ensureNoRenderPass();
-
             if (pipeline.IsComputePipeline)
             {
                 SDL3ComputePipeline computePipeline = Util.AssertSubtype<Pipeline, SDL3ComputePipeline>(pipeline);
@@ -350,8 +344,6 @@ namespace Veldrid.SDL3
 
         private protected override void SetVertexBufferCore(uint index, DeviceBuffer buffer, uint offset)
         {
-            ensureNoRenderPass();
-
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
             Util.EnsureArrayMinimumSize(ref currentVertexBuffers, index + 1);
@@ -365,8 +357,6 @@ namespace Veldrid.SDL3
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
-            ensureNoRenderPass();
-
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
             currentIndexBuffer = (new SDL_GPUBufferBinding
@@ -378,8 +368,6 @@ namespace Veldrid.SDL3
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            ensureNoRenderPass();
-
             currentClearColor = new SDL_FColor
             {
                 r = clearColor.R,
@@ -391,8 +379,6 @@ namespace Veldrid.SDL3
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
-            ensureNoRenderPass();
-
             currentClearDepth = depth;
             currentClearStencil = stencil;
         }
