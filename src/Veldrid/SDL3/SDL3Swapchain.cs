@@ -64,21 +64,20 @@ namespace Veldrid.SDL3
         private void setParameters()
         {
             SDL_GPUSwapchainComposition composition = SDL_GPUSwapchainComposition.SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
-            SDL_GPUPresentMode presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_VSYNC;
 
             if (colorSrgb && SDL_WindowSupportsGPUSwapchainComposition(gd.Device, gd.Window, SDL_GPUSwapchainComposition.SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR))
                 composition = SDL_GPUSwapchainComposition.SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR;
 
-            if (syncToVBlank)
-            {
-                if (SDL_WindowSupportsGPUPresentMode(gd.Device, gd.Window, SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_MAILBOX))
-                    presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_MAILBOX;
-            }
+            SDL_GPUPresentMode presentMode;
+
+            if (syncToVBlank && SDL_WindowSupportsGPUPresentMode(gd.Device, gd.Window, SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_VSYNC))
+                presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_VSYNC;
+            else if (allowTearing && SDL_WindowSupportsGPUPresentMode(gd.Device, gd.Window, SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_IMMEDIATE))
+                presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_IMMEDIATE;
+            else if (SDL_WindowSupportsGPUPresentMode(gd.Device, gd.Window, SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_MAILBOX))
+                presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_MAILBOX;
             else
-            {
-                if (SDL_WindowSupportsGPUPresentMode(gd.Device, gd.Window, SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_IMMEDIATE))
-                    presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_IMMEDIATE;
-            }
+                presentMode = SDL_GPUPresentMode.SDL_GPU_PRESENTMODE_IMMEDIATE;
 
             SDL_SetGPUSwapchainParameters(gd.Device, gd.Window, composition, presentMode);
         }
