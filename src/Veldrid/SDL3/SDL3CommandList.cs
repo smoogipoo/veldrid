@@ -501,10 +501,13 @@ namespace Veldrid.SDL3
 
             SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
 
+            uint bufferIndex = 0;
+            uint textureIndex = 0;
+            uint samplerIndex = 0;
+
             for (int index = 0; index < currentGraphicsPipeline.ResourceLayoutCount; index++)
             {
                 SDL3ResourceSet set = currentGraphicsResourceSets[index];
-                uint slot = set.Layout.BindingSlotByVdIndex[index];
 
                 SDL_GPUBuffer* buffer = null;
                 SDL_GPUTexture* texture = null;
@@ -538,34 +541,37 @@ namespace Veldrid.SDL3
 
                 if (buffer != null)
                 {
+                    uint slot = bufferIndex++;
+
                     if ((stages & ShaderStages.Vertex) > 0)
                         SDL_BindGPUVertexStorageBuffers(renderPass, slot, &buffer, 1);
                     if ((stages & ShaderStages.Fragment) > 0)
                         SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &buffer, 1);
                 }
 
-                if (texture != null)
+                if (sampler != null)
                 {
-                    if (sampler != null)
-                    {
-                        SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
-                        {
-                            sampler = sampler,
-                            texture = texture
-                        };
+                    uint slot = samplerIndex++;
 
-                        if ((stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
-                        if ((stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
-                    }
-                    else
+                    SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
                     {
-                        if ((stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
-                        if ((stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
-                    }
+                        sampler = sampler,
+                        texture = texture
+                    };
+
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
+                }
+                else if (texture != null)
+                {
+                    uint slot = textureIndex++;
+
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
                 }
             }
 
@@ -662,10 +668,13 @@ namespace Veldrid.SDL3
 
             SDL_BindGPUComputePipeline(computePass, currentComputePipeline.Pipeline);
 
+            uint bufferIndex = 0;
+            uint textureIndex = 0;
+            uint samplerIndex = 0;
+
             for (int index = 0; index < currentComputePipeline.ResourceLayoutCount; index++)
             {
                 SDL3ResourceSet set = currentComputeResourceSets[index];
-                uint slot = set.Layout.BindingSlotByVdIndex[index];
 
                 SDL_GPUBuffer* buffer = null;
                 SDL_GPUTexture* texture = null;
@@ -696,21 +705,26 @@ namespace Veldrid.SDL3
                 }
 
                 if (buffer != null)
-                    SDL_BindGPUComputeStorageBuffers(computePass, slot, &buffer, 1);
-
-                if (texture != null)
                 {
-                    if (sampler != null)
+                    uint slot = bufferIndex++;
+                    SDL_BindGPUComputeStorageBuffers(computePass, slot, &buffer, 1);
+                }
+
+                if (sampler != null)
+                {
+                    uint slot = samplerIndex++;
+
+                    SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
                     {
-                        SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
-                        {
-                            sampler = sampler,
-                            texture = texture
-                        };
+                        sampler = sampler,
+                        texture = texture
+                    };
 
-                        SDL_BindGPUComputeSamplers(computePass, slot, &pairBinding, 1);
-                    }
-
+                    SDL_BindGPUComputeSamplers(computePass, slot, &pairBinding, 1);
+                }
+                else if (texture != null)
+                {
+                    uint slot = textureIndex++;
                     SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
                 }
             }
