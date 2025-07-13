@@ -33,8 +33,10 @@ namespace Veldrid.SDL3
 
         private (SDL_GPUBufferBinding, SDL_GPUIndexElementSize)? currentIndexBuffer;
         private SDL_GPUBufferBinding[] currentVertexBuffers = [];
+
         private SDL_GPUViewport? currentViewport;
         private SDL_Rect? currentScissor;
+
         private SDL_FColor? currentClearColor;
         private float? currentClearDepth;
         private byte? currentClearStencil;
@@ -554,10 +556,16 @@ namespace Veldrid.SDL3
             }
 
             if (currentViewport is SDL_GPUViewport viewport)
+            {
                 SDL_SetGPUViewport(renderPass, &viewport);
+                currentViewport = null;
+            }
 
             if (currentScissor is SDL_Rect scissor)
+            {
                 SDL_SetGPUScissor(renderPass, &scissor);
+                currentScissor = null;
+            }
 
             fixed (SDL_GPUBufferBinding* vertexBindings = &currentVertexBuffers[0])
                 SDL_BindGPUVertexBuffers(renderPass, 0, vertexBindings, currentGraphicsPipeline.VertexLayoutCount);
