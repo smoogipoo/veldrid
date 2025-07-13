@@ -11,6 +11,8 @@ namespace Veldrid.SDL3
         public override string Name { get; set; }
 
         public readonly SDL_GPUGraphicsPipeline* Pipeline;
+        public readonly uint ResourceLayoutCount;
+        public readonly uint VertexLayoutCount;
 
         private readonly SDL3GraphicsDevice gd;
         private bool isDisposed;
@@ -157,6 +159,8 @@ namespace Veldrid.SDL3
             }
 
             Pipeline = SDL_CreateGPUGraphicsPipeline(gd.Device, &pci);
+            ResourceLayoutCount = (uint)pd.ResourceLayouts.Length;
+            VertexLayoutCount = (uint)pd.ShaderSet.VertexLayouts.Length;
         }
 
         public override bool IsComputePipeline => false;
