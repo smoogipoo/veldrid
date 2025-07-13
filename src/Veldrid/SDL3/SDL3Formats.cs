@@ -459,17 +459,9 @@ namespace Veldrid.SDL3
             };
         }
 
-        public static SDL_GPUColorComponentFlags VdToSDLColorComponentFlags(ColorWriteMask? mask)
+        public static SDL_GPUColorComponentFlags VdToSDLColorComponentFlags(ColorWriteMask mask)
         {
-            if (mask == null)
-            {
-                return SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_R
-                       | SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_G
-                       | SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_B
-                       | SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_A;
-            }
-
-            SDL_GPUColorComponentFlags flags = default;
+            SDL_GPUColorComponentFlags flags = 0;
 
             if ((mask & ColorWriteMask.Red) > 0)
                 flags |= SDL_GPUColorComponentFlags.SDL_GPU_COLORCOMPONENT_R;

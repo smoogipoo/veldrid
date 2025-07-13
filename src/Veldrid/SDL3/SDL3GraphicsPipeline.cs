@@ -84,7 +84,7 @@ namespace Veldrid.SDL3
                         src_alpha_blendfactor = SDL3Formats.VdToSDLBlendFactor(blendDesc.SourceAlphaFactor),
                         dst_alpha_blendfactor = SDL3Formats.VdToSDLBlendFactor(blendDesc.DestinationAlphaFactor),
                         alpha_blend_op = SDL3Formats.VdToSDLBlendOp(blendDesc.AlphaFunction),
-                        color_write_mask = SDL3Formats.VdToSDLColorComponentFlags(blendDesc.ColorWriteMask),
+                        color_write_mask = SDL3Formats.VdToSDLColorComponentFlags(blendDesc.ColorWriteMask.GetOrDefault()),
                         enable_blend = blendDesc.BlendEnabled,
                         enable_color_write_mask = blendDesc.ColorWriteMask != null
                     }
