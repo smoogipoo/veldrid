@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using SDL;
 using static SDL.SDL3;
@@ -324,8 +323,6 @@ namespace Veldrid.SDL3
                 SDL3ComputePipeline computePipeline = Util.AssertSubtype<Pipeline, SDL3ComputePipeline>(pipeline);
 
                 Util.EnsureArrayMinimumSize(ref currentComputeResourceSets, computePipeline.ResourceLayoutCount);
-
-                currentComputePipeline = computePipeline;
             }
             else
             {
@@ -333,8 +330,6 @@ namespace Veldrid.SDL3
 
                 Util.EnsureArrayMinimumSize(ref currentGraphicsResourceSets, graphicsPipeline.ResourceLayoutCount);
                 Util.EnsureArrayMinimumSize(ref currentVertexBuffers, graphicsPipeline.VertexLayoutCount);
-
-                currentGraphicsPipeline = graphicsPipeline;
             }
         }
 
@@ -475,11 +470,13 @@ namespace Veldrid.SDL3
 
         private void prepareDrawCommand()
         {
-            Debug.Assert(currentGraphicsPipeline != null);
-
             ensureRenderPass();
 
-            SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
+            if (currentGraphicsPipeline != GraphicsPipeline)
+            {
+                currentGraphicsPipeline = Util.AssertSubtype<Pipeline, SDL3GraphicsPipeline>(GraphicsPipeline);
+                SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
+            }
 
             uint bufferIndex = 0;
             uint textureIndex = 0;
@@ -640,12 +637,11 @@ namespace Veldrid.SDL3
 
             SDL_EndGPURenderPass(renderPass);
             renderPass = null;
+            currentGraphicsPipeline = null;
         }
 
         private ValueInvokeOnDisposal beginComputePass()
         {
-            Debug.Assert(currentComputePipeline != null);
-
             ensureNoRenderPass();
             ensureNoCopyPass();
 
@@ -655,7 +651,11 @@ namespace Veldrid.SDL3
             // 3: SDL_BindGPU* below?
             computePass = SDL_BeginGPUComputePass(commandBuffer, null, 0, null, 0);
 
-            SDL_BindGPUComputePipeline(computePass, currentComputePipeline.Pipeline);
+            if (currentComputePipeline != ComputePipeline)
+            {
+                currentComputePipeline = Util.AssertSubtype<Pipeline, SDL3ComputePipeline>(ComputePipeline);
+                SDL_BindGPUComputePipeline(computePass, currentComputePipeline.Pipeline);
+            }
 
             uint bufferIndex = 0;
             uint textureIndex = 0;
@@ -724,6 +724,7 @@ namespace Veldrid.SDL3
 
                 SDL_EndGPUComputePass(cl.computePass);
                 cl.computePass = null;
+                cl.currentComputePipeline = null;
             });
         }
 
