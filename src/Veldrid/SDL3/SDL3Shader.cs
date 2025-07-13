@@ -35,6 +35,8 @@ namespace Veldrid.SDL3
                         code = codePtr,
                         entrypoint = new FixedUtf8String(sd.EntryPoint),
                         stage = SDL3Formats.VdToSDLShaderStage(sd.Stage),
+                        num_storage_buffers = (uint)sd.StorageBufferCount,
+                        num_samplers = (uint)sd.SamplerCount,
                         format = SDL3Formats.VdToSDLShaderFormat(gd.BackendType)
                     };
 

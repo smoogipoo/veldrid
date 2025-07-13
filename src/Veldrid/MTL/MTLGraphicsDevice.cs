@@ -276,7 +276,7 @@ namespace Veldrid.MTL
                         using (var ms = new MemoryStream(data))
                         {
                             resourceStream.CopyTo(ms);
-                            var shaderDesc = new ShaderDescription(ShaderStages.Compute, data, "copy_bytes");
+                            var shaderDesc = new ShaderDescription(ShaderStages.Compute, data, "copy_bytes", 2, 0);
                             unalignedBufferCopyShader = new MtlShader(ref shaderDesc, this);
                         }
                     }

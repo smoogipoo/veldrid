@@ -28,6 +28,10 @@ namespace Veldrid
         /// </summary>
         public string EntryPoint;
 
+        public int StorageBufferCount;
+
+        public int SamplerCount;
+
         /// <summary>
         ///     Indicates whether the shader should be debuggable. This flag only has an effect if <see cref="ShaderBytes" />
         ///     contains
@@ -41,11 +45,13 @@ namespace Veldrid
         /// <param name="stage">The shader stage to create.</param>
         /// <param name="shaderBytes">An array containing the raw shader bytes.</param>
         /// <param name="entryPoint">The name of the entry point function in the shader module to be used in this stage.</param>
-        public ShaderDescription(ShaderStages stage, byte[] shaderBytes, string entryPoint)
+        public ShaderDescription(ShaderStages stage, byte[] shaderBytes, string entryPoint, int storageBufferCount, int samplerCount)
         {
             Stage = stage;
             ShaderBytes = shaderBytes;
             EntryPoint = entryPoint;
+            StorageBufferCount = storageBufferCount;
+            SamplerCount = samplerCount;
             Debug = false;
         }
 
@@ -59,11 +65,13 @@ namespace Veldrid
         ///     Indicates whether the shader should be debuggable. This flag only has an effect if
         ///     <paramref name="shaderBytes" /> contains shader code that will be compiled.
         /// </param>
-        public ShaderDescription(ShaderStages stage, byte[] shaderBytes, string entryPoint, bool debug)
+        public ShaderDescription(ShaderStages stage, byte[] shaderBytes, string entryPoint, int storageBufferCount, int samplerCount, bool debug)
         {
             Stage = stage;
             ShaderBytes = shaderBytes;
             EntryPoint = entryPoint;
+            StorageBufferCount = storageBufferCount;
+            SamplerCount = samplerCount;
             Debug = debug;
         }
 
