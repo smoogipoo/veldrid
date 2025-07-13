@@ -106,6 +106,7 @@ namespace Veldrid.SDL3
             beginRenderPass();
 
             SDL3ResourceSet sdlRs = Util.AssertSubtype<ResourceSet, SDL3ResourceSet>(rs);
+            uint sdlSlot = sdlRs.Layout.BindingSlotByVdIndex[slot];
 
             SDL_GPUBuffer* buffer = null;
             SDL_GPUTexture* texture = null;
@@ -140,9 +141,9 @@ namespace Veldrid.SDL3
             if (buffer != null)
             {
                 if ((stages & ShaderStages.Vertex) > 0)
-                    SDL_BindGPUVertexStorageBuffers(renderPass, slot, &buffer, 1);
+                    SDL_BindGPUVertexStorageBuffers(renderPass, sdlSlot, &buffer, 1);
                 if ((stages & ShaderStages.Fragment) > 0)
-                    SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &buffer, 1);
+                    SDL_BindGPUFragmentStorageBuffers(renderPass, sdlSlot, &buffer, 1);
             }
 
             if (texture != null)
@@ -156,15 +157,17 @@ namespace Veldrid.SDL3
                     };
 
                     if ((stages & ShaderStages.Vertex) > 0)
-                        SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
+                        SDL_BindGPUVertexSamplers(renderPass, sdlSlot, &pairBinding, 1);
                     if ((stages & ShaderStages.Fragment) > 0)
-                        SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
+                        SDL_BindGPUFragmentSamplers(renderPass, sdlSlot, &pairBinding, 1);
                 }
-
-                if ((stages & ShaderStages.Vertex) > 0)
-                    SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
-                if ((stages & ShaderStages.Fragment) > 0)
-                    SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
+                else
+                {
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexStorageTextures(renderPass, sdlSlot, &texture, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentStorageTextures(renderPass, sdlSlot, &texture, 1);
+                }
             }
         }
 
@@ -173,6 +176,7 @@ namespace Veldrid.SDL3
             beginComputePass();
 
             SDL3ResourceSet sdlSet = Util.AssertSubtype<ResourceSet, SDL3ResourceSet>(set);
+            uint sdlSlot = sdlSet.Layout.BindingSlotByVdIndex[slot];
 
             SDL_GPUBuffer* buffer = null;
             SDL_GPUTexture* texture = null;
@@ -203,7 +207,7 @@ namespace Veldrid.SDL3
             }
 
             if (buffer != null)
-                SDL_BindGPUComputeStorageBuffers(computePass, slot, &buffer, 1);
+                SDL_BindGPUComputeStorageBuffers(computePass, sdlSlot, &buffer, 1);
 
             if (texture != null)
             {
@@ -215,10 +219,10 @@ namespace Veldrid.SDL3
                         texture = texture
                     };
 
-                    SDL_BindGPUComputeSamplers(computePass, slot, &pairBinding, 1);
+                    SDL_BindGPUComputeSamplers(computePass, sdlSlot, &pairBinding, 1);
                 }
 
-                SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
+                SDL_BindGPUComputeStorageTextures(computePass, sdlSlot, &texture, 1);
             }
         }
 
