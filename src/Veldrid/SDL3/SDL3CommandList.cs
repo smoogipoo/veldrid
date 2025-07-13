@@ -17,6 +17,7 @@ namespace Veldrid.SDL3
         private SDL_GPUCommandBuffer* commandBuffer;
         private SDL_GPURenderPass* renderPass;
         private SDL_GPUComputePass* computePass;
+        private SDL_GPUCopyPass* copyPass;
         private SDL_GPUFence* completionFence;
 
         private bool acquiredSwapchainTexture;
@@ -89,6 +90,7 @@ namespace Veldrid.SDL3
                 ensureRenderPass();
             }
 
+            ensureNoCopyPass();
             ensureNoRenderPass();
 
             completionFence = SDL_SubmitGPUCommandBufferAndAcquireFence(commandBuffer);
@@ -213,12 +215,10 @@ namespace Veldrid.SDL3
 
         protected override void CopyBufferCore(DeviceBuffer source, uint sourceOffset, DeviceBuffer destination, uint destinationOffset, uint sizeInBytes)
         {
-            ensureNoRenderPass();
+            ensureCopyPass();
 
             SDL3Buffer sdlSource = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(source);
             SDL3Buffer sdlDestination = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(destination);
-
-            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
             if ((source.Usage & BufferUsage.Staging) > 0)
             {
@@ -253,20 +253,16 @@ namespace Veldrid.SDL3
 
                 SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, sizeInBytes, false);
             }
-
-            SDL_EndGPUCopyPass(copyPass);
         }
 
         protected override void CopyTextureCore(Texture source, uint srcX, uint srcY, uint srcZ, uint srcMipLevel, uint srcBaseArrayLayer, Texture destination, uint dstX, uint dstY, uint dstZ,
                                                 uint dstMipLevel,
                                                 uint dstBaseArrayLayer, uint width, uint height, uint depth, uint layerCount)
         {
-            ensureNoRenderPass();
+            ensureCopyPass();
 
             SDL3Texture sdlSource = Util.AssertSubtype<Texture, SDL3Texture>(source);
             SDL3Texture sdlDestination = Util.AssertSubtype<Texture, SDL3Texture>(destination);
-
-            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
             if ((source.Usage & TextureUsage.Staging) > 0)
             {
@@ -317,8 +313,6 @@ namespace Veldrid.SDL3
 
                 SDL_CopyGPUTextureToTexture(copyPass, &srcLocation, &dstLocation, width, height, depth, false);
             }
-
-            SDL_EndGPUCopyPass(copyPass);
         }
 
         private protected override void SetPipelineCore(Pipeline pipeline)
@@ -399,7 +393,7 @@ namespace Veldrid.SDL3
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
-            ensureNoRenderPass();
+            ensureCopyPass();
 
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
@@ -440,8 +434,6 @@ namespace Veldrid.SDL3
             Unsafe.CopyBlock(mapped + transferRegion.offset, (byte*)source, sizeInBytes);
             SDL_UnmapGPUTransferBuffer(gd.Device, transferBuffer);
 
-            SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
-
             SDL_GPUBufferRegion dstRegion = new SDL_GPUBufferRegion
             {
                 buffer = sdlBuffer.Buffer,
@@ -450,7 +442,6 @@ namespace Veldrid.SDL3
             };
 
             SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, false);
-            SDL_EndGPUCopyPass(copyPass);
 
             if (mustDisposeTransferBuffer)
                 SDL_ReleaseGPUTransferBuffer(gd.Device, transferBuffer);
@@ -458,6 +449,7 @@ namespace Veldrid.SDL3
 
         private protected override void GenerateMipmapsCore(Texture texture)
         {
+            ensureNoCopyPass();
             ensureNoRenderPass();
 
             SDL3Texture sdlTexture = Util.AssertSubtype<Texture, SDL3Texture>(texture);
@@ -579,6 +571,8 @@ namespace Veldrid.SDL3
             if (renderPass != null)
                 return;
 
+            ensureNoCopyPass();
+
             SDL3Framebuffer sdlFb = Util.AssertSubtype<Framebuffer, SDL3Framebuffer>(Framebuffer);
             SDL_GPUColorTargetInfo* colorTargets = stackalloc SDL_GPUColorTargetInfo[Framebuffer.ColorTargets.Count];
 
@@ -645,6 +639,7 @@ namespace Veldrid.SDL3
             Debug.Assert(currentComputePipeline != null);
 
             ensureNoRenderPass();
+            ensureNoCopyPass();
 
             // ??? how many times do we need to define the storage bindings ???
             // 1: here...?
@@ -722,6 +717,24 @@ namespace Veldrid.SDL3
                 SDL_EndGPUComputePass(cl.computePass);
                 cl.computePass = null;
             });
+        }
+
+        private void ensureCopyPass()
+        {
+            if (copyPass != null)
+                return;
+
+            ensureNoRenderPass();
+            copyPass = SDL_BeginGPUCopyPass(commandBuffer);
+        }
+
+        private void ensureNoCopyPass()
+        {
+            if (copyPass == null)
+                return;
+
+            SDL_EndGPUCopyPass(copyPass);
+            copyPass = null;
         }
 
         public override void Dispose()
