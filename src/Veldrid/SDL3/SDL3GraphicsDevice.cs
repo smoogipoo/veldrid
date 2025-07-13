@@ -9,6 +9,12 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
+    internal unsafe struct SDL3CommandListSubmission
+    {
+        public SDL_GPUFence* FencePtr;
+        public SDL3Fence Fence;
+    }
+
     internal unsafe class SDL3GraphicsDevice : GraphicsDevice
     {
         public override string DeviceName => string.Empty;
@@ -28,7 +34,7 @@ namespace Veldrid.SDL3
         public readonly SDL_Window* Window;
         public readonly SDL3Swapchain SDLSwapchain;
 
-        private readonly List<IntPtr> submittedCLs = new List<IntPtr>();
+        private readonly Queue<SDL3CommandListSubmission> submittedCLs = new Queue<SDL3CommandListSubmission>();
 
         public SDL3GraphicsDevice(GraphicsDeviceOptions options, SwapchainDescription? scDesc)
         {
@@ -171,31 +177,49 @@ namespace Veldrid.SDL3
         private protected override void SubmitCommandsCore(CommandList commandList, Fence fence)
         {
             SDL3CommandList sdlCommandList = Util.AssertSubtype<CommandList, SDL3CommandList>(commandList);
-            IntPtr fencePtr = (IntPtr)sdlCommandList.GetCompletionFence();
+            SDL_GPUFence* fencePtr = sdlCommandList.GetCompletionFence();
+            SDL3Fence sdlFence = null;
 
             if (fence != null)
             {
-                SDL3Fence sdlFence = Util.AssertSubtype<Fence, SDL3Fence>(fence);
-                sdlFence.SetNativeFence(sdlCommandList.GetCompletionFence());
+                sdlFence = Util.AssertSubtype<Fence, SDL3Fence>(fence);
+                sdlFence.Fence = fencePtr;
+                sdlFence.Reset();
             }
 
-            submittedCLs.Add(fencePtr);
+            submittedCLs.Enqueue(new SDL3CommandListSubmission
+            {
+                FencePtr = fencePtr,
+                Fence = sdlFence
+            });
         }
 
         private protected override void SwapBuffersCore(Swapchain swapchain)
         {
+            while (submittedCLs.TryPeek(out SDL3CommandListSubmission submission))
+            {
+                if (!SDL_QueryGPUFence(Device, submission.FencePtr))
+                {
+                    // CommandBuffer submissions are processed in-order, so we can stop iterating as soon as one query fails.
+                    break;
+                }
+
+                submission.Fence?.Signal();
+                SDL_ReleaseGPUFence(Device, submission.FencePtr);
+
+                submittedCLs.Dequeue();
+            }
         }
 
         private protected override void WaitForIdleCore()
         {
             SDL_GPUFence** fences = stackalloc SDL_GPUFence*[submittedCLs.Count];
 
-            for (int i = 0; i < submittedCLs.Count; i++)
-                fences[i] = (SDL_GPUFence*)submittedCLs[i];
+            int i = 0;
+            foreach (SDL3CommandListSubmission submission in submittedCLs)
+                fences[i++] = submission.FencePtr;
 
             SDL_WaitForGPUFences(Device, true, fences, (uint)submittedCLs.Count);
-            for (int i = 0; i < submittedCLs.Count; i++)
-                SDL_ReleaseGPUFence(Device, fences[i]);
         }
 
         private protected override void WaitForNextFrameReadyCore()

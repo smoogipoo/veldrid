@@ -2,38 +2,34 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using SDL;
-using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
     internal unsafe class SDL3Fence : Fence
     {
-        public override bool Signaled => Fence != null ? SDL_QueryGPUFence(gd.Device, Fence) : signaled;
+        public override bool Signaled => signaled;
 
         public override string Name { get; set; }
 
-        public SDL_GPUFence* Fence { get; private set; }
+        public SDL_GPUFence* Fence { get; set; }
 
-        private readonly SDL3GraphicsDevice gd;
         private bool signaled;
         private bool isDisposed;
 
-        public SDL3Fence(SDL3GraphicsDevice gd, bool signaled)
+        public SDL3Fence(bool signaled)
         {
-            this.gd = gd;
             this.signaled = signaled;
         }
 
         public override bool IsDisposed => isDisposed;
 
-        public void SetNativeFence(SDL_GPUFence* fence)
+        public void Signal()
         {
-            Fence = fence;
+            signaled = true;
         }
 
         public override void Reset()
         {
-            Fence = null;
             signaled = false;
         }
 
@@ -43,7 +39,6 @@ namespace Veldrid.SDL3
                 return;
 
             // Native fence object is disposed by SDL3GraphicsDevice.
-
             isDisposed = true;
         }
     }

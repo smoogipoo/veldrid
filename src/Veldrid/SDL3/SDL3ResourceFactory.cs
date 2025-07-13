@@ -34,7 +34,7 @@ namespace Veldrid.SDL3
             => new SDL3ResourceSet(ref description);
 
         public override Fence CreateFence(bool signaled)
-            => new SDL3Fence(gd, signaled);
+            => new SDL3Fence(signaled);
 
         public override Swapchain CreateSwapchain(ref SwapchainDescription description)
             => new SDL3Swapchain(gd, ref description);
