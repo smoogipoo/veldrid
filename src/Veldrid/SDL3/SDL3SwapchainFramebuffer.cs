@@ -15,17 +15,20 @@ namespace Veldrid.SDL3
         public override uint Width => width;
         public override uint Height => height;
 
-        private readonly SDL3ExternalTexture sdlTexture;
         private readonly SDL3GraphicsDevice gd;
+        private readonly SDL3SwapchainDepthTexture depthTexture;
+        private readonly SDL3SwapchainColorTexture colorTexture;
+
         private uint width;
         private uint height;
         private bool isDisposed;
 
-        public SDL3SwapchainFramebuffer(SDL3GraphicsDevice gd)
-            : base(null, [new FramebufferAttachmentDescription(new SDL3ExternalTexture(SDL3Formats.SDLToVdTextureFormat(SDL_GetGPUSwapchainTextureFormat(gd.Device, gd.Window))), 0)])
+        public SDL3SwapchainFramebuffer(SDL3GraphicsDevice gd, SDL3SwapchainDepthTexture depthTexture, SDL3SwapchainColorTexture colorTexture)
+            : base(depthTexture == null ? null : new FramebufferAttachmentDescription(depthTexture, 0), [new FramebufferAttachmentDescription(colorTexture, 0)])
         {
             this.gd = gd;
-            sdlTexture = Util.AssertSubtype<Texture, SDL3ExternalTexture>(ColorTargets[0].Target);
+            this.depthTexture = depthTexture;
+            this.colorTexture = colorTexture;
         }
 
         public void Resize(uint width, uint height)
@@ -60,10 +63,11 @@ namespace Veldrid.SDL3
                 1,
                 1,
                 SDL3Formats.SDLToVdTextureFormat(SDL_GetGPUSwapchainTextureFormat(gd.Device, gd.Window)),
-                TextureUsage.RenderTarget | TextureUsage.DepthStencil,
+                TextureUsage.RenderTarget,
                 TextureSampleCount.Count1);
 
-            sdlTexture.SetNativeTexture(tex, ref td);
+            colorTexture.SetNativeTexture(tex, ref td);
+            depthTexture?.Resize(width, height);
         }
 
         public override bool IsDisposed => isDisposed;
@@ -72,6 +76,9 @@ namespace Veldrid.SDL3
         {
             if (isDisposed)
                 return;
+
+            colorTexture.Dispose();
+            depthTexture?.Dispose();
 
             isDisposed = true;
         }

@@ -5,7 +5,7 @@ using SDL;
 
 namespace Veldrid.SDL3
 {
-    internal unsafe class SDL3ExternalTexture : SDL3TextureBase
+    internal unsafe class SDL3SwapchainColorTexture : SDL3TextureBase
     {
         public override PixelFormat Format => format;
         public override uint Width => width;
@@ -33,11 +33,11 @@ namespace Veldrid.SDL3
         private TextureSampleCount sampleCount;
         private bool isDisposed;
 
-        public SDL3ExternalTexture()
+        public SDL3SwapchainColorTexture()
         {
         }
 
-        public SDL3ExternalTexture(PixelFormat format)
+        public SDL3SwapchainColorTexture(PixelFormat format)
         {
             this.format = format;
         }

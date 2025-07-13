@@ -44,7 +44,7 @@ namespace Veldrid.SDL3
 
         protected override Texture CreateTextureCore(ulong nativeTexture, ref TextureDescription description)
         {
-            SDL3ExternalTexture texture = new SDL3ExternalTexture();
+            SDL3SwapchainColorTexture texture = new SDL3SwapchainColorTexture();
             texture.SetNativeTexture((SDL_GPUTexture*)nativeTexture, ref description);
             return texture;
         }

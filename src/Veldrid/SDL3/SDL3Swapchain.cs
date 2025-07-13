@@ -22,9 +22,18 @@ namespace Veldrid.SDL3
             this.gd = gd;
 
             colorSrgb = sd.ColorSrgb;
-            framebuffer = new SDL3SwapchainFramebuffer(gd);
-
             setParameters();
+
+            SDL3SwapchainDepthTexture depthTexture = null;
+            SDL3SwapchainColorTexture colorTexture = new SDL3SwapchainColorTexture(SDL3Formats.SDLToVdTextureFormat(SDL_GetGPUSwapchainTextureFormat(gd.Device, gd.Window)));
+
+            if (sd.DepthFormat is PixelFormat depthFormat)
+            {
+                TextureDescription depthDesc = TextureDescription.Texture2D(sd.Width, sd.Height, 1, 1, depthFormat, TextureUsage.DepthStencil, TextureSampleCount.Count1);
+                depthTexture = new SDL3SwapchainDepthTexture(gd, ref depthDesc);
+            }
+
+            framebuffer = new SDL3SwapchainFramebuffer(gd, depthTexture, colorTexture);
         }
 
         public override Framebuffer Framebuffer => framebuffer;
