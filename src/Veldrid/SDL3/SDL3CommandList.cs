@@ -122,9 +122,11 @@ namespace Veldrid.SDL3
 
         public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
-            prepareDispatchCommand();
+            beginComputePass();
 
             SDL_DispatchGPUCompute(computePass, groupCountX, groupCountY, groupCountZ);
+
+            endComputePass();
         }
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
@@ -187,10 +189,12 @@ namespace Veldrid.SDL3
 
         protected override void DispatchIndirectCore(DeviceBuffer indirectBuffer, uint offset)
         {
-            prepareDispatchCommand();
+            beginComputePass();
 
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(indirectBuffer);
             SDL_DispatchGPUComputeIndirect(computePass, sdlBuffer.Buffer, offset);
+
+            endComputePass();
         }
 
         protected override void ResolveTextureCore(Texture source, Texture destination)
@@ -653,11 +657,17 @@ namespace Veldrid.SDL3
             renderPass = null;
         }
 
-        private void prepareDispatchCommand()
+        private void beginComputePass()
         {
             Debug.Assert(currentComputePipeline != null);
 
-            beginComputePass();
+            endRenderPass();
+
+            // ??? how many times do we need to define the storage bindings ???
+            // 1: here...?
+            // 2: SDL_CreateGPUComputePipeline?
+            // 3: SDL_BindGPU* below?
+            computePass = SDL_BeginGPUComputePass(commandBuffer, null, 0, null, 0);
 
             SDL_BindGPUComputePipeline(computePass, currentComputePipeline.Pipeline);
 
@@ -713,17 +723,6 @@ namespace Veldrid.SDL3
                     SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
                 }
             }
-        }
-
-        private void beginComputePass()
-        {
-            endRenderPass();
-
-            if (computePass != null)
-                return;
-
-            // Todo:
-            // computePass = SDL_BeginGPUComputePass()
         }
 
         private void endComputePass()
