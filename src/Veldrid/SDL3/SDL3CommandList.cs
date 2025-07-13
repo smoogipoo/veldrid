@@ -96,19 +96,12 @@ namespace Veldrid.SDL3
         {
             endRenderPass();
 
-            float vpY = gd.IsClipSpaceYInverted
-                ? viewport.Y
-                : viewport.Height + viewport.Y;
-            float vpHeight = gd.IsClipSpaceYInverted
-                ? viewport.Height
-                : -viewport.Height;
-
             currentViewport = new SDL_GPUViewport
             {
                 x = viewport.X,
-                y = vpY,
+                y = viewport.Y,
                 w = viewport.Width,
-                h = vpHeight,
+                h = viewport.Height,
                 min_depth = viewport.MinDepth,
                 max_depth = viewport.MaxDepth
             };
