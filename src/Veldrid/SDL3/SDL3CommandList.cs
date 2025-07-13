@@ -646,6 +646,9 @@ namespace Veldrid.SDL3
                 renderPass = SDL_BeginGPURenderPass(commandBuffer, colorTargets, (uint)Framebuffer.ColorTargets.Count, null);
 
             currentFramebufferEverActive = true;
+            currentClearColor = null;
+            currentClearDepth = null;
+            currentClearStencil = null;
         }
 
         private void endRenderPass()
