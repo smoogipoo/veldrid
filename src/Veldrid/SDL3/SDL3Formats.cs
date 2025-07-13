@@ -206,16 +206,16 @@ namespace Veldrid.SDL3
             }
         }
 
-        public static SDL_GPUTextureFormat VdToSDLTextureFormat(PixelFormat format)
+        public static SDL_GPUTextureFormat VdToSDLTextureFormat(PixelFormat format, bool isDepth)
         {
             return format switch
             {
                 PixelFormat.R8G8B8A8UNorm => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
                 PixelFormat.B8G8R8A8UNorm => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_B8G8R8A8_UNORM,
                 PixelFormat.R8UNorm => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R8_UNORM,
-                PixelFormat.R16UNorm => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_UNORM,
+                PixelFormat.R16UNorm => isDepth ? SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D16_UNORM : SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R16_UNORM,
                 PixelFormat.R32G32B32A32Float => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R32G32B32A32_FLOAT,
-                PixelFormat.R32Float => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
+                PixelFormat.R32Float => isDepth ? SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT : SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_R32_FLOAT,
                 PixelFormat.Bc3UNorm => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_BC3_RGBA_UNORM,
                 PixelFormat.D24UNormS8UInt => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D24_UNORM_S8_UINT,
                 PixelFormat.D32FloatS8UInt => SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT_S8_UINT,
@@ -324,6 +324,8 @@ namespace Veldrid.SDL3
                 SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_BC3_RGBA_UNORM_SRGB => PixelFormat.Bc3UNormSRgb,
                 SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_BC7_RGBA_UNORM_SRGB => PixelFormat.Bc7UNormSRgb,
                 SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_BC2_RGBA_UNORM => PixelFormat.Bc2UNorm,
+                SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D16_UNORM => PixelFormat.R16UNorm,
+                SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT => PixelFormat.R32Float,
                 _ => throw Illegal.Value<SDL_GPUTextureFormat>()
             };
         }

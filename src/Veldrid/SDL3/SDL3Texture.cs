@@ -51,7 +51,7 @@ namespace Veldrid.SDL3
                 SDL_GPUTransferBufferCreateInfo uploadInfo = new SDL_GPUTransferBufferCreateInfo
                 {
                     usage = SDL_GPUTransferBufferUsage.SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
-                    size = SDL_CalculateGPUTextureFormatSize(SDL3Formats.VdToSDLTextureFormat(td.Format), td.Width, td.Height, td.Depth)
+                    size = SDL_CalculateGPUTextureFormatSize(SDL3Formats.VdToSDLTextureFormat(td.Format, false), td.Width, td.Height, td.Depth)
                 };
 
                 TransferBuffer = SDL_CreateGPUTransferBuffer(gd.Device, &uploadInfo);
@@ -62,7 +62,7 @@ namespace Veldrid.SDL3
                 SDL_GPUTextureCreateInfo tci = new SDL_GPUTextureCreateInfo
                 {
                     type = SDL3Formats.VdToSDLTextureType(td.Type, (td.Usage & TextureUsage.Cubemap) > 0, td.ArrayLayers > 1),
-                    format = SDL3Formats.VdToSDLTextureFormat(td.Format),
+                    format = SDL3Formats.VdToSDLTextureFormat(td.Format, (td.Usage & TextureUsage.DepthStencil) > 0),
                     usage = SDL3Formats.VdToSDLTextureUsage(td.Usage),
                     width = td.Width,
                     height = td.Height,

@@ -322,7 +322,7 @@ namespace Veldrid.SDL3
             properties = new PixelFormatProperties(uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MaxValue, uint.MaxValue);
 
             return SDL_GPUTextureSupportsFormat(Device,
-                SDL3Formats.VdToSDLTextureFormat(format),
+                SDL3Formats.VdToSDLTextureFormat(format, (usage & TextureUsage.DepthStencil) > 0),
                 SDL3Formats.VdToSDLTextureType(type, (usage & TextureUsage.Cubemap) > 0, false),
                 SDL3Formats.VdToSDLTextureUsage(usage));
         }

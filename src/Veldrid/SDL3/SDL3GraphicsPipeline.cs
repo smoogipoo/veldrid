@@ -75,7 +75,7 @@ namespace Veldrid.SDL3
 
                 colorTargetDescriptions[i] = new SDL_GPUColorTargetDescription
                 {
-                    format = SDL3Formats.VdToSDLTextureFormat(outputDesc.Format),
+                    format = SDL3Formats.VdToSDLTextureFormat(outputDesc.Format, false),
                     blend_state = new SDL_GPUColorTargetBlendState
                     {
                         src_color_blendfactor = SDL3Formats.VdToSDLBlendFactor(blendDesc.SourceColorFactor),
@@ -141,7 +141,7 @@ namespace Veldrid.SDL3
                     color_target_descriptions = colorTargetDescriptions,
                     num_color_targets = (uint)pd.Outputs.ColorAttachments.Length,
                     depth_stencil_format = pd.Outputs.DepthAttachment != null
-                        ? SDL3Formats.VdToSDLTextureFormat(pd.Outputs.DepthAttachment.Value.Format)
+                        ? SDL3Formats.VdToSDLTextureFormat(pd.Outputs.DepthAttachment.Value.Format, true)
                         : SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_INVALID,
                     has_depth_stencil_target = pd.Outputs.DepthAttachment != null
                 },
