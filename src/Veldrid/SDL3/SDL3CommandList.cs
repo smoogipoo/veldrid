@@ -161,12 +161,6 @@ namespace Veldrid.SDL3
             currentClearColor = null;
             currentClearDepth = null;
             currentClearStencil = null;
-
-            if (Framebuffer is SDL3SwapchainFramebuffer swapchainFramebuffer && !acquiredSwapchainTexture)
-            {
-                swapchainFramebuffer.AcquireTexture(commandBuffer);
-                acquiredSwapchainTexture = true;
-            }
         }
 
         protected override void DrawIndirectCore(DeviceBuffer indirectBuffer, uint offset, uint drawCount, uint stride)
@@ -577,6 +571,12 @@ namespace Veldrid.SDL3
                 return;
 
             ensureNoCopyPass();
+
+            if (Framebuffer is SDL3SwapchainFramebuffer swapchainFramebuffer && !acquiredSwapchainTexture)
+            {
+                swapchainFramebuffer.AcquireTexture(commandBuffer);
+                acquiredSwapchainTexture = true;
+            }
 
             SDL3Framebuffer sdlFb = Util.AssertSubtype<Framebuffer, SDL3Framebuffer>(Framebuffer);
             SDL_GPUColorTargetInfo* colorTargets = stackalloc SDL_GPUColorTargetInfo[Framebuffer.ColorTargets.Count];
