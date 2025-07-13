@@ -7,7 +7,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3Shader : Shader
+    internal unsafe class SDL3Shader : Shader
     {
         public override string Name { get; set; }
 
@@ -27,21 +27,18 @@ namespace Veldrid.SDL3
 
             fixed (byte* codePtr = ShaderBytes)
             {
-                fixed (char* entryPoint = sd.EntryPoint)
+                SDL_GPUShaderCreateInfo ci = new SDL_GPUShaderCreateInfo
                 {
-                    SDL_GPUShaderCreateInfo ci = new SDL_GPUShaderCreateInfo
-                    {
-                        code_size = (nuint)ShaderBytes.Length,
-                        code = codePtr,
-                        entrypoint = new FixedUtf8String(sd.EntryPoint),
-                        stage = SDL3Formats.VdToSDLShaderStage(sd.Stage),
-                        num_storage_buffers = (uint)sd.StorageBufferCount,
-                        num_samplers = (uint)sd.SamplerCount,
-                        format = SDL3Formats.VdToSDLShaderFormat(gd.BackendType)
-                    };
+                    code_size = (nuint)ShaderBytes.Length,
+                    code = codePtr,
+                    entrypoint = new FixedUtf8String(sd.EntryPoint),
+                    stage = SDL3Formats.VdToSDLShaderStage(sd.Stage),
+                    num_storage_buffers = (uint)sd.StorageBufferCount,
+                    num_samplers = (uint)sd.SamplerCount,
+                    format = SDL3Formats.VdToSDLShaderFormat(gd.BackendType)
+                };
 
-                    Shader = SDL_CreateGPUShader(gd.Device, &ci);
-                }
+                Shader = SDL_CreateGPUShader(gd.Device, &ci);
             }
         }
 

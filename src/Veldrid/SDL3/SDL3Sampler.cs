@@ -6,7 +6,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3Sampler : Sampler
+    internal unsafe class SDL3Sampler : Sampler
     {
         public override string Name { get; set; }
 

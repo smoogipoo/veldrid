@@ -3,7 +3,7 @@
 
 namespace Veldrid.SDL3
 {
-    public class SDL3ResourceLayout : ResourceLayout
+    internal class SDL3ResourceLayout : ResourceLayout
     {
         public override string Name { get; set; }
 
@@ -17,7 +17,7 @@ namespace Veldrid.SDL3
         public readonly uint ReadWriteTextureCount;
         private bool isDisposed;
 
-        public SDL3ResourceLayout(SDL3GraphicsDevice gd, ref ResourceLayoutDescription description)
+        public SDL3ResourceLayout(ref ResourceLayoutDescription description)
             : base(ref description)
         {
             Elements = description.Elements;

@@ -6,7 +6,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3Buffer : DeviceBuffer
+    internal unsafe class SDL3Buffer : DeviceBuffer
     {
         public override uint SizeInBytes { get; }
         public override BufferUsage Usage { get; }

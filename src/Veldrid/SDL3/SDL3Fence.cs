@@ -6,7 +6,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3Fence : Fence
+    internal unsafe class SDL3Fence : Fence
     {
         public override bool Signaled => Fence != null ? SDL_QueryGPUFence(gd.Device, Fence) : signaled;
 

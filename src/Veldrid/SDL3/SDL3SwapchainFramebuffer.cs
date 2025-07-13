@@ -8,7 +8,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3SwapchainFramebuffer : SDL3Framebuffer
+    internal unsafe class SDL3SwapchainFramebuffer : SDL3Framebuffer
     {
         public override string Name { get; set; }
 

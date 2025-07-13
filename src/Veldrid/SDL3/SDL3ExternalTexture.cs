@@ -5,7 +5,7 @@ using SDL;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3ExternalTexture : SDL3TextureBase
+    internal unsafe class SDL3ExternalTexture : SDL3TextureBase
     {
         public override PixelFormat Format => format;
         public override uint Width => width;

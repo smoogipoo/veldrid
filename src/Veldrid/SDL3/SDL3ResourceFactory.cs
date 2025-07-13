@@ -6,7 +6,7 @@ using SDL;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3ResourceFactory : ResourceFactory
+    internal unsafe class SDL3ResourceFactory : ResourceFactory
     {
         private readonly SDL3GraphicsDevice gd;
 
@@ -22,16 +22,16 @@ namespace Veldrid.SDL3
             => new SDL3ComputePipeline(gd, ref description);
 
         public override Framebuffer CreateFramebuffer(ref FramebufferDescription description)
-            => new SDL3Framebuffer(gd, ref description);
+            => new SDL3Framebuffer(ref description);
 
         public override CommandList CreateCommandList(ref CommandListDescription description)
             => new SDL3CommandList(gd, ref description);
 
         public override ResourceLayout CreateResourceLayout(ref ResourceLayoutDescription description)
-            => new SDL3ResourceLayout(gd, ref description);
+            => new SDL3ResourceLayout(ref description);
 
         public override ResourceSet CreateResourceSet(ref ResourceSetDescription description)
-            => new SDL3ResourceSet(gd, ref description);
+            => new SDL3ResourceSet(ref description);
 
         public override Fence CreateFence(bool signaled)
             => new SDL3Fence(gd, signaled);

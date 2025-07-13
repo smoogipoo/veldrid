@@ -9,7 +9,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3CommandList : CommandList
+    internal unsafe class SDL3CommandList : CommandList
     {
         public override string Name { get; set; }
 
@@ -514,7 +514,7 @@ namespace Veldrid.SDL3
                 for (int i = 0; i < set.Layout.Elements.Length; i++)
                 {
                     ResourceLayoutElementDescription element = set.Layout.Elements[i];
-                    IBindableResource resource = set.BoundResources[i];
+                    IBindableResource resource = set.Resources[i];
                     stages = element.Stages;
 
                     switch (element.Kind)
@@ -674,7 +674,7 @@ namespace Veldrid.SDL3
                 for (int i = 0; i < set.Layout.Elements.Length; i++)
                 {
                     ResourceLayoutElementDescription element = set.Layout.Elements[i];
-                    IBindableResource resource = set.BoundResources[i];
+                    IBindableResource resource = set.Resources[i];
 
                     switch (element.Kind)
                     {

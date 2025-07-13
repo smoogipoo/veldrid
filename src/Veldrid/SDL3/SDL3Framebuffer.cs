@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3Framebuffer : Framebuffer
+    internal class SDL3Framebuffer : Framebuffer
     {
         public override string Name { get; set; }
 
@@ -16,7 +16,7 @@ namespace Veldrid.SDL3
         {
         }
 
-        public SDL3Framebuffer(SDL3GraphicsDevice gd, ref FramebufferDescription fd)
+        public SDL3Framebuffer(ref FramebufferDescription fd)
             : base(fd.DepthTarget, fd.ColorTargets)
         {
         }

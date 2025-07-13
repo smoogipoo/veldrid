@@ -6,7 +6,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3GraphicsPipeline : Pipeline
+    internal unsafe class SDL3GraphicsPipeline : Pipeline
     {
         public override string Name { get; set; }
 

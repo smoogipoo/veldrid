@@ -9,7 +9,7 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public unsafe class SDL3GraphicsDevice : GraphicsDevice
+    internal unsafe class SDL3GraphicsDevice : GraphicsDevice
     {
         public override string DeviceName => string.Empty;
         public override string VendorName => string.Empty;

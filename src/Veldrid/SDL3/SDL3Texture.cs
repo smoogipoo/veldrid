@@ -6,12 +6,12 @@ using static SDL.SDL3;
 
 namespace Veldrid.SDL3
 {
-    public abstract unsafe class SDL3TextureBase : Texture
+    internal abstract unsafe class SDL3TextureBase : Texture
     {
         public abstract SDL_GPUTexture* Texture { get; }
     }
 
-    public unsafe class SDL3Texture : SDL3TextureBase
+    internal unsafe class SDL3Texture : SDL3TextureBase
     {
         public override PixelFormat Format { get; }
         public override uint Width { get; }

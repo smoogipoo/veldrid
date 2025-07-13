@@ -3,20 +3,20 @@
 
 namespace Veldrid.SDL3
 {
-    public class SDL3ResourceSet : ResourceSet
+    internal class SDL3ResourceSet : ResourceSet
     {
         public override string Name { get; set; }
 
-        public readonly SDL3ResourceLayout Layout;
-        public readonly IBindableResource[] BoundResources;
+        public new readonly SDL3ResourceLayout Layout;
+        public new readonly IBindableResource[] Resources;
 
         private bool isDisposed;
 
-        public SDL3ResourceSet(SDL3GraphicsDevice gd, ref ResourceSetDescription description)
+        public SDL3ResourceSet(ref ResourceSetDescription description)
             : base(ref description)
         {
             Layout = Util.AssertSubtype<ResourceLayout, SDL3ResourceLayout>(description.Layout);
-            BoundResources = description.BoundResources;
+            Resources = description.BoundResources;
         }
 
         public override bool IsDisposed => isDisposed;
