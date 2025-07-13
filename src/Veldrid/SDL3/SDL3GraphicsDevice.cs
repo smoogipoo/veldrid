@@ -184,6 +184,10 @@ namespace Veldrid.SDL3
 
         private protected override void SwapBuffersCore(Swapchain swapchain)
         {
+        }
+
+        private protected override void WaitForIdleCore()
+        {
             SDL_GPUFence** fences = stackalloc SDL_GPUFence*[submittedCLs.Count];
 
             for (int i = 0; i < submittedCLs.Count; i++)
@@ -192,10 +196,6 @@ namespace Veldrid.SDL3
             SDL_WaitForGPUFences(Device, true, fences, (uint)submittedCLs.Count);
             for (int i = 0; i < submittedCLs.Count; i++)
                 SDL_ReleaseGPUFence(Device, fences[i]);
-        }
-
-        private protected override void WaitForIdleCore()
-        {
         }
 
         private protected override void WaitForNextFrameReadyCore()
