@@ -143,13 +143,13 @@ namespace Veldrid.SDL3
 
             if (resource is SDL3Buffer buffer)
             {
-                mappedPtr = SDL_MapGPUTransferBuffer(Device, buffer.TransferBuffer, true);
+                mappedPtr = SDL_MapGPUTransferBuffer(Device, buffer.TransferBuffer, false);
                 sizeInBytes = buffer.SizeInBytes;
             }
             else
             {
                 SDL3Texture texture = Util.AssertSubtype<IMappableResource, SDL3Texture>(resource);
-                mappedPtr = SDL_MapGPUTransferBuffer(Device, texture.TransferBuffer, true);
+                mappedPtr = SDL_MapGPUTransferBuffer(Device, texture.TransferBuffer, false);
                 texture.GetSubresourceLayout(subresource, out sizeInBytes, out offset, out rowPitch, out depthPitch);
             }
 
@@ -312,6 +312,7 @@ namespace Veldrid.SDL3
             SDL_UploadToGPUBuffer(copyPass, &transferRegion, &dstRegion, false);
             SDL_EndGPUCopyPass(copyPass);
             SDL_SubmitGPUCommandBuffer(commandBuffer);
+
             if (mustDisposeTransferBuffer)
                 SDL_ReleaseGPUTransferBuffer(Device, transferBuffer);
         }

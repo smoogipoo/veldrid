@@ -310,7 +310,7 @@ namespace Veldrid.SDL3
                     size = sizeInBytes
                 };
 
-                SDL_UploadToGPUBuffer(copyPass, &srcLocation, &dstRegion, true);
+                SDL_UploadToGPUBuffer(copyPass, &srcLocation, &dstRegion, false);
             }
             else
             {
@@ -326,7 +326,7 @@ namespace Veldrid.SDL3
                     offset = destinationOffset
                 };
 
-                SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, sizeInBytes, true);
+                SDL_CopyGPUBufferToBuffer(copyPass, &srcLocation, &dstLocation, sizeInBytes, false);
             }
 
             SDL_EndGPUCopyPass(copyPass);
