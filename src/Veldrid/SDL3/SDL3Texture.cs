@@ -61,12 +61,12 @@ namespace Veldrid.SDL3
             {
                 SDL_GPUTextureCreateInfo tci = new SDL_GPUTextureCreateInfo
                 {
-                    type = SDL3Formats.VdToSDLTextureType(td.Type, (td.Usage & TextureUsage.Cubemap) > 0, td.ArrayLayers > 0),
+                    type = SDL3Formats.VdToSDLTextureType(td.Type, (td.Usage & TextureUsage.Cubemap) > 0, td.ArrayLayers > 1),
                     format = SDL3Formats.VdToSDLTextureFormat(td.Format),
                     usage = SDL3Formats.VdToSDLTextureUsage(td.Usage),
                     width = td.Width,
                     height = td.Height,
-                    layer_count_or_depth = td.ArrayLayers + td.Depth,
+                    layer_count_or_depth = td.ArrayLayers > 1 ? td.ArrayLayers : td.Depth,
                     num_levels = td.MipLevels,
                     sample_count = SDL3Formats.VdToSDLSampleCount(td.SampleCount)
                 };
