@@ -2,6 +2,7 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using SDL;
 using static SDL.SDL3;
@@ -504,92 +505,12 @@ namespace Veldrid.SDL3
 
         private void prepareDrawCommand()
         {
+            Debug.Assert(currentGraphicsPipeline != null);
+
             beginRenderPass();
-            activateGraphicsResourceSets();
 
-            if (currentViewport is SDL_GPUViewport viewport)
-                SDL_SetGPUViewport(renderPass, &viewport);
+            SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
 
-            if (currentScissor is SDL_Rect scissor)
-                SDL_SetGPUScissor(renderPass, &scissor);
-
-            fixed (SDL_GPUBufferBinding* vertexBindings = &currentVertexBuffers[0])
-                SDL_BindGPUVertexBuffers(renderPass, 0, vertexBindings, currentGraphicsPipeline.VertexLayoutCount);
-
-            if (currentIndexBuffer is var (binding, size))
-                SDL_BindGPUIndexBuffer(renderPass, &binding, size);
-        }
-
-        private void beginRenderPass()
-        {
-            endComputePass();
-
-            if (renderPass != null)
-                return;
-
-            SDL3Framebuffer sdlFb = Util.AssertSubtype<Framebuffer, SDL3Framebuffer>(Framebuffer);
-            SDL_GPUColorTargetInfo* colorTargets = stackalloc SDL_GPUColorTargetInfo[Framebuffer.ColorTargets.Count];
-
-            for (int i = 0; i < sdlFb.ColorTargets.Count; i++)
-            {
-                FramebufferAttachment attachment = sdlFb.ColorTargets[i];
-
-                SDL3TextureBase sdlTarget = Util.AssertSubtype<Texture, SDL3TextureBase>(attachment.Target);
-
-                colorTargets[i] = new SDL_GPUColorTargetInfo
-                {
-                    texture = sdlTarget.Texture,
-                    mip_level = attachment.MipLevel,
-                    layer_or_depth_plane = attachment.ArrayLayer,
-                    clear_color = currentClearColor ?? default,
-                    load_op = currentClearColor == null
-                        ? SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD
-                        : SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
-                };
-            }
-
-            if (Framebuffer.DepthTarget.HasValue)
-            {
-                SDL3TextureBase sdlTarget = Util.AssertSubtype<Texture, SDL3TextureBase>(Framebuffer.DepthTarget.Value.Target);
-
-                SDL_GPUDepthStencilTargetInfo depthTarget = new SDL_GPUDepthStencilTargetInfo
-                {
-                    texture = sdlTarget.Texture,
-                    clear_depth = currentClearDepth ?? 0,
-                    load_op = currentClearDepth == null
-                        ? SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD
-                        : SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
-                    stencil_load_op = currentClearStencil == null
-                        ? SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD
-                        : SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                    stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
-                    clear_stencil = currentClearStencil ?? 0,
-                };
-
-                renderPass = SDL_BeginGPURenderPass(commandBuffer, colorTargets, (uint)Framebuffer.ColorTargets.Count, &depthTarget);
-            }
-            else
-                renderPass = SDL_BeginGPURenderPass(commandBuffer, colorTargets, (uint)Framebuffer.ColorTargets.Count, null);
-
-            if (currentGraphicsPipeline != null)
-                SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
-
-            currentFramebufferEverActive = true;
-        }
-
-        private void endRenderPass()
-        {
-            if (renderPass == null)
-                return;
-
-            SDL_EndGPURenderPass(renderPass);
-            renderPass = null;
-        }
-
-        private void activateGraphicsResourceSets()
-        {
             for (int index = 0; index < currentGraphicsPipeline.ResourceLayoutCount; index++)
             {
                 SDL3ResourceSet set = currentGraphicsResourceSets[index];
@@ -657,36 +578,93 @@ namespace Veldrid.SDL3
                     }
                 }
             }
+
+            if (currentViewport is SDL_GPUViewport viewport)
+                SDL_SetGPUViewport(renderPass, &viewport);
+
+            if (currentScissor is SDL_Rect scissor)
+                SDL_SetGPUScissor(renderPass, &scissor);
+
+            fixed (SDL_GPUBufferBinding* vertexBindings = &currentVertexBuffers[0])
+                SDL_BindGPUVertexBuffers(renderPass, 0, vertexBindings, currentGraphicsPipeline.VertexLayoutCount);
+
+            if (currentIndexBuffer is var (binding, size))
+                SDL_BindGPUIndexBuffer(renderPass, &binding, size);
+        }
+
+        private void beginRenderPass()
+        {
+            endComputePass();
+
+            if (renderPass != null)
+                return;
+
+            SDL3Framebuffer sdlFb = Util.AssertSubtype<Framebuffer, SDL3Framebuffer>(Framebuffer);
+            SDL_GPUColorTargetInfo* colorTargets = stackalloc SDL_GPUColorTargetInfo[Framebuffer.ColorTargets.Count];
+
+            for (int i = 0; i < sdlFb.ColorTargets.Count; i++)
+            {
+                FramebufferAttachment attachment = sdlFb.ColorTargets[i];
+
+                SDL3TextureBase sdlTarget = Util.AssertSubtype<Texture, SDL3TextureBase>(attachment.Target);
+
+                colorTargets[i] = new SDL_GPUColorTargetInfo
+                {
+                    texture = sdlTarget.Texture,
+                    mip_level = attachment.MipLevel,
+                    layer_or_depth_plane = attachment.ArrayLayer,
+                    clear_color = currentClearColor ?? default,
+                    load_op = currentClearColor == null
+                        ? SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD
+                        : SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                };
+            }
+
+            if (Framebuffer.DepthTarget.HasValue)
+            {
+                SDL3TextureBase sdlTarget = Util.AssertSubtype<Texture, SDL3TextureBase>(Framebuffer.DepthTarget.Value.Target);
+
+                SDL_GPUDepthStencilTargetInfo depthTarget = new SDL_GPUDepthStencilTargetInfo
+                {
+                    texture = sdlTarget.Texture,
+                    clear_depth = currentClearDepth ?? 0,
+                    load_op = currentClearDepth == null
+                        ? SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD
+                        : SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                    stencil_load_op = currentClearStencil == null
+                        ? SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD
+                        : SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                    stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                    clear_stencil = currentClearStencil ?? 0,
+                };
+
+                renderPass = SDL_BeginGPURenderPass(commandBuffer, colorTargets, (uint)Framebuffer.ColorTargets.Count, &depthTarget);
+            }
+            else
+                renderPass = SDL_BeginGPURenderPass(commandBuffer, colorTargets, (uint)Framebuffer.ColorTargets.Count, null);
+
+            currentFramebufferEverActive = true;
+        }
+
+        private void endRenderPass()
+        {
+            if (renderPass == null)
+                return;
+
+            SDL_EndGPURenderPass(renderPass);
+            renderPass = null;
         }
 
         private void prepareDispatchCommand()
         {
+            Debug.Assert(currentComputePipeline != null);
+
             beginComputePass();
-            activateComputeResourceSets();
-        }
 
-        private void beginComputePass()
-        {
-            endRenderPass();
+            SDL_BindGPUComputePipeline(computePass, currentComputePipeline.Pipeline);
 
-            if (computePass != null)
-                return;
-
-            // Todo:
-            // computePass = SDL_BeginGPUComputePass()
-        }
-
-        private void endComputePass()
-        {
-            if (computePass == null)
-                return;
-
-            SDL_EndGPUComputePass(computePass);
-            computePass = null;
-        }
-
-        private void activateComputeResourceSets()
-        {
             for (int index = 0; index < currentComputePipeline.ResourceLayoutCount; index++)
             {
                 SDL3ResourceSet set = currentComputeResourceSets[index];
@@ -739,6 +717,26 @@ namespace Veldrid.SDL3
                     SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
                 }
             }
+        }
+
+        private void beginComputePass()
+        {
+            endRenderPass();
+
+            if (computePass != null)
+                return;
+
+            // Todo:
+            // computePass = SDL_BeginGPUComputePass()
+        }
+
+        private void endComputePass()
+        {
+            if (computePass == null)
+                return;
+
+            SDL_EndGPUComputePass(computePass);
+            computePass = null;
         }
 
         public override void Dispose()
