@@ -84,17 +84,19 @@ namespace Veldrid.SDL3
         public override void End()
         {
             if (!currentFramebufferEverActive && currentFramebuffer != null)
-                beginRenderPass();
+            {
+                // Flush any queued texture clears.
+                ensureRenderPass();
+            }
 
-            endRenderPass();
-            endComputePass();
+            ensureNoRenderPass();
 
             completionFence = SDL_SubmitGPUCommandBufferAndAcquireFence(commandBuffer);
         }
 
         public override void SetViewport(uint index, ref Viewport viewport)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             currentViewport = new SDL_GPUViewport
             {
@@ -109,7 +111,7 @@ namespace Veldrid.SDL3
 
         public override void SetScissorRect(uint index, uint x, uint y, uint width, uint height)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             currentScissor = new SDL_Rect
             {
@@ -122,11 +124,8 @@ namespace Veldrid.SDL3
 
         public override void Dispatch(uint groupCountX, uint groupCountY, uint groupCountZ)
         {
-            beginComputePass();
-
-            SDL_DispatchGPUCompute(computePass, groupCountX, groupCountY, groupCountZ);
-
-            endComputePass();
+            using (beginComputePass())
+                SDL_DispatchGPUCompute(computePass, groupCountX, groupCountY, groupCountZ);
         }
 
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
@@ -146,13 +145,13 @@ namespace Veldrid.SDL3
             if (renderPass != null)
             {
                 // Finish the current render pass.
-                endRenderPass();
+                ensureNoRenderPass();
             }
             else if (!currentFramebufferEverActive && currentFramebuffer != null)
             {
-                // Force any queued up texture clears to be emitted.
-                beginRenderPass();
-                endRenderPass();
+                // Flush any queued texture clears.
+                ensureRenderPass();
+                ensureNoRenderPass();
             }
 
             SDL3Framebuffer sdlFb = Util.AssertSubtype<Framebuffer, SDL3Framebuffer>(fb);
@@ -189,17 +188,16 @@ namespace Veldrid.SDL3
 
         protected override void DispatchIndirectCore(DeviceBuffer indirectBuffer, uint offset)
         {
-            beginComputePass();
-
-            SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(indirectBuffer);
-            SDL_DispatchGPUComputeIndirect(computePass, sdlBuffer.Buffer, offset);
-
-            endComputePass();
+            using (beginComputePass())
+            {
+                SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(indirectBuffer);
+                SDL_DispatchGPUComputeIndirect(computePass, sdlBuffer.Buffer, offset);
+            }
         }
 
         protected override void ResolveTextureCore(Texture source, Texture destination)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3TextureBase sdlSource = Util.AssertSubtype<Texture, SDL3TextureBase>(source);
             SDL3Texture sdlDestination = Util.AssertSubtype<Texture, SDL3Texture>(destination);
@@ -219,8 +217,7 @@ namespace Veldrid.SDL3
 
         protected override void CopyBufferCore(DeviceBuffer source, uint sourceOffset, DeviceBuffer destination, uint destinationOffset, uint sizeInBytes)
         {
-            endComputePass();
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3Buffer sdlSource = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(source);
             SDL3Buffer sdlDestination = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(destination);
@@ -268,8 +265,7 @@ namespace Veldrid.SDL3
                                                 uint dstMipLevel,
                                                 uint dstBaseArrayLayer, uint width, uint height, uint depth, uint layerCount)
         {
-            endComputePass();
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3Texture sdlSource = Util.AssertSubtype<Texture, SDL3Texture>(source);
             SDL3Texture sdlDestination = Util.AssertSubtype<Texture, SDL3Texture>(destination);
@@ -331,8 +327,7 @@ namespace Veldrid.SDL3
 
         private protected override void SetPipelineCore(Pipeline pipeline)
         {
-            endComputePass();
-            endRenderPass();
+            ensureNoRenderPass();
 
             if (pipeline.IsComputePipeline)
             {
@@ -355,7 +350,7 @@ namespace Veldrid.SDL3
 
         private protected override void SetVertexBufferCore(uint index, DeviceBuffer buffer, uint offset)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
@@ -370,7 +365,7 @@ namespace Veldrid.SDL3
 
         private protected override void SetIndexBufferCore(DeviceBuffer buffer, IndexFormat format, uint offset)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
@@ -383,7 +378,7 @@ namespace Veldrid.SDL3
 
         private protected override void ClearColorTargetCore(uint index, RgbaFloat clearColor)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             currentClearColor = new SDL_FColor
             {
@@ -396,7 +391,7 @@ namespace Veldrid.SDL3
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
-            endRenderPass();
+            ensureNoRenderPass();
 
             currentClearDepth = depth;
             currentClearStencil = stencil;
@@ -418,8 +413,7 @@ namespace Veldrid.SDL3
 
         private protected override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
         {
-            endComputePass();
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3Buffer sdlBuffer = Util.AssertSubtype<DeviceBuffer, SDL3Buffer>(buffer);
 
@@ -478,8 +472,7 @@ namespace Veldrid.SDL3
 
         private protected override void GenerateMipmapsCore(Texture texture)
         {
-            endComputePass();
-            endRenderPass();
+            ensureNoRenderPass();
 
             SDL3Texture sdlTexture = Util.AssertSubtype<Texture, SDL3Texture>(texture);
             SDL_GenerateMipmapsForGPUTexture(commandBuffer, sdlTexture.Texture);
@@ -504,7 +497,7 @@ namespace Veldrid.SDL3
         {
             Debug.Assert(currentGraphicsPipeline != null);
 
-            beginRenderPass();
+            ensureRenderPass();
 
             SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
 
@@ -589,10 +582,8 @@ namespace Veldrid.SDL3
                 SDL_BindGPUIndexBuffer(renderPass, &binding, size);
         }
 
-        private void beginRenderPass()
+        private void ensureRenderPass()
         {
-            endComputePass();
-
             if (renderPass != null)
                 return;
 
@@ -648,7 +639,7 @@ namespace Veldrid.SDL3
             currentClearStencil = null;
         }
 
-        private void endRenderPass()
+        private void ensureNoRenderPass()
         {
             if (renderPass == null)
                 return;
@@ -657,11 +648,11 @@ namespace Veldrid.SDL3
             renderPass = null;
         }
 
-        private void beginComputePass()
+        private ValueInvokeOnDisposal beginComputePass()
         {
             Debug.Assert(currentComputePipeline != null);
 
-            endRenderPass();
+            ensureNoRenderPass();
 
             // ??? how many times do we need to define the storage bindings ???
             // 1: here...?
@@ -723,15 +714,14 @@ namespace Veldrid.SDL3
                     SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
                 }
             }
-        }
 
-        private void endComputePass()
-        {
-            if (computePass == null)
-                return;
+            return new ValueInvokeOnDisposal(this, static sender =>
+            {
+                SDL3CommandList cl = Util.AssertSubtype<object, SDL3CommandList>(sender);
 
-            SDL_EndGPUComputePass(computePass);
-            computePass = null;
+                SDL_EndGPUComputePass(cl.computePass);
+                cl.computePass = null;
+            });
         }
 
         public override void Dispose()
