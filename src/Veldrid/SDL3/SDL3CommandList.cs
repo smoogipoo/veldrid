@@ -26,11 +26,9 @@ namespace Veldrid.SDL3
 
         private SDL3GraphicsPipeline currentGraphicsPipeline;
         private SDL3ResourceSet[] currentGraphicsResourceSets = [];
-        private bool graphicsResourceSetsActive;
 
         private SDL3ComputePipeline currentComputePipeline;
         private SDL3ResourceSet[] currentComputeResourceSets = [];
-        private bool computeResourceSetsActive;
 
         private (SDL_GPUBufferBinding, SDL_GPUIndexElementSize)? currentIndexBuffer;
         private SDL_GPUBufferBinding[] currentVertexBuffers = [];
@@ -72,11 +70,9 @@ namespace Veldrid.SDL3
 
             currentGraphicsPipeline = null;
             Util.ClearArray(currentGraphicsResourceSets);
-            graphicsResourceSetsActive = false;
 
             currentComputePipeline = null;
             Util.ClearArray(currentComputeResourceSets);
-            computeResourceSetsActive = false;
 
             currentIndexBuffer = null;
             Util.ClearArray(currentVertexBuffers);
@@ -135,23 +131,13 @@ namespace Veldrid.SDL3
         protected override void SetGraphicsResourceSetCore(uint slot, ResourceSet rs, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
             SDL3ResourceSet sdlRs = Util.AssertSubtype<ResourceSet, SDL3ResourceSet>(rs);
-
-            if (currentGraphicsResourceSets[slot] != sdlRs)
-            {
-                currentGraphicsResourceSets[slot] = sdlRs;
-                graphicsResourceSetsActive = false;
-            }
+            currentGraphicsResourceSets[slot] = sdlRs;
         }
 
         protected override void SetComputeResourceSetCore(uint slot, ResourceSet set, uint dynamicOffsetsCount, ref uint dynamicOffsets)
         {
             SDL3ResourceSet sdlSet = Util.AssertSubtype<ResourceSet, SDL3ResourceSet>(set);
-
-            if (currentComputeResourceSets[slot] != sdlSet)
-            {
-                currentComputeResourceSets[slot] = sdlSet;
-                computeResourceSetsActive = false;
-            }
+            currentComputeResourceSets[slot] = sdlSet;
         }
 
         protected override void SetFramebufferCore(Framebuffer fb)
@@ -487,83 +473,78 @@ namespace Veldrid.SDL3
                 SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
             }
 
-            if (!graphicsResourceSetsActive)
+            uint bufferIndex = 0;
+            uint textureIndex = 0;
+            uint samplerIndex = 0;
+
+            for (int index = 0; index < currentGraphicsPipeline.ResourceLayoutCount; index++)
             {
-                uint bufferIndex = 0;
-                uint textureIndex = 0;
-                uint samplerIndex = 0;
+                SDL3ResourceSet set = currentGraphicsResourceSets[index];
 
-                for (int index = 0; index < currentGraphicsPipeline.ResourceLayoutCount; index++)
+                SDL_GPUBuffer* buffer = null;
+                SDL_GPUTexture* texture = null;
+                SDL_GPUSampler* sampler = null;
+                ShaderStages stages = ShaderStages.None;
+
+                for (int i = 0; i < set.Layout.Elements.Length; i++)
                 {
-                    SDL3ResourceSet set = currentGraphicsResourceSets[index];
+                    ResourceLayoutElementDescription element = set.Layout.Elements[i];
+                    IBindableResource resource = set.Resources[i];
+                    stages = element.Stages;
 
-                    SDL_GPUBuffer* buffer = null;
-                    SDL_GPUTexture* texture = null;
-                    SDL_GPUSampler* sampler = null;
-                    ShaderStages stages = ShaderStages.None;
-
-                    for (int i = 0; i < set.Layout.Elements.Length; i++)
+                    switch (element.Kind)
                     {
-                        ResourceLayoutElementDescription element = set.Layout.Elements[i];
-                        IBindableResource resource = set.Resources[i];
-                        stages = element.Stages;
+                        case ResourceKind.UniformBuffer:
+                        case ResourceKind.StructuredBufferReadOnly:
+                        case ResourceKind.StructuredBufferReadWrite:
+                            buffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource).Buffer;
+                            break;
 
-                        switch (element.Kind)
-                        {
-                            case ResourceKind.UniformBuffer:
-                            case ResourceKind.StructuredBufferReadOnly:
-                            case ResourceKind.StructuredBufferReadWrite:
-                                buffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource).Buffer;
-                                break;
+                        case ResourceKind.TextureReadOnly:
+                        case ResourceKind.TextureReadWrite:
+                            texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource).Texture;
+                            break;
 
-                            case ResourceKind.TextureReadOnly:
-                            case ResourceKind.TextureReadWrite:
-                                texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource).Texture;
-                                break;
-
-                            case ResourceKind.Sampler:
-                                sampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource).Sampler;
-                                break;
-                        }
-                    }
-
-                    if (buffer != null)
-                    {
-                        uint slot = bufferIndex++;
-
-                        if ((stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexStorageBuffers(renderPass, slot, &buffer, 1);
-                        if ((stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &buffer, 1);
-                    }
-
-                    if (sampler != null)
-                    {
-                        uint slot = samplerIndex++;
-
-                        SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
-                        {
-                            sampler = sampler,
-                            texture = texture
-                        };
-
-                        if ((stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
-                        if ((stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
-                    }
-                    else if (texture != null)
-                    {
-                        uint slot = textureIndex++;
-
-                        if ((stages & ShaderStages.Vertex) > 0)
-                            SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
-                        if ((stages & ShaderStages.Fragment) > 0)
-                            SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
+                        case ResourceKind.Sampler:
+                            sampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource).Sampler;
+                            break;
                     }
                 }
 
-                graphicsResourceSetsActive = true;
+                if (buffer != null)
+                {
+                    uint slot = bufferIndex++;
+
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexStorageBuffers(renderPass, slot, &buffer, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &buffer, 1);
+                }
+
+                if (sampler != null)
+                {
+                    uint slot = samplerIndex++;
+
+                    SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
+                    {
+                        sampler = sampler,
+                        texture = texture
+                    };
+
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
+                }
+                else if (texture != null)
+                {
+                    uint slot = textureIndex++;
+
+                    if ((stages & ShaderStages.Vertex) > 0)
+                        SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
+                    if ((stages & ShaderStages.Fragment) > 0)
+                        SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
+                }
             }
 
             if (currentViewport is SDL_GPUViewport viewport)
@@ -659,7 +640,6 @@ namespace Veldrid.SDL3
 
             renderPass = null;
             currentGraphicsPipeline = null;
-            graphicsResourceSetsActive = false;
         }
 
         private ValueInvokeOnDisposal beginComputePass()
@@ -679,70 +659,65 @@ namespace Veldrid.SDL3
                 SDL_BindGPUComputePipeline(computePass, currentComputePipeline.Pipeline);
             }
 
-            if (!computeResourceSetsActive)
+            uint bufferIndex = 0;
+            uint textureIndex = 0;
+            uint samplerIndex = 0;
+
+            for (int index = 0; index < currentComputePipeline.ResourceLayoutCount; index++)
             {
-                uint bufferIndex = 0;
-                uint textureIndex = 0;
-                uint samplerIndex = 0;
+                SDL3ResourceSet set = currentComputeResourceSets[index];
 
-                for (int index = 0; index < currentComputePipeline.ResourceLayoutCount; index++)
+                SDL_GPUBuffer* buffer = null;
+                SDL_GPUTexture* texture = null;
+                SDL_GPUSampler* sampler = null;
+
+                for (int i = 0; i < set.Layout.Elements.Length; i++)
                 {
-                    SDL3ResourceSet set = currentComputeResourceSets[index];
+                    ResourceLayoutElementDescription element = set.Layout.Elements[i];
+                    IBindableResource resource = set.Resources[i];
 
-                    SDL_GPUBuffer* buffer = null;
-                    SDL_GPUTexture* texture = null;
-                    SDL_GPUSampler* sampler = null;
-
-                    for (int i = 0; i < set.Layout.Elements.Length; i++)
+                    switch (element.Kind)
                     {
-                        ResourceLayoutElementDescription element = set.Layout.Elements[i];
-                        IBindableResource resource = set.Resources[i];
+                        case ResourceKind.UniformBuffer:
+                        case ResourceKind.StructuredBufferReadOnly:
+                        case ResourceKind.StructuredBufferReadWrite:
+                            buffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource).Buffer;
+                            break;
 
-                        switch (element.Kind)
-                        {
-                            case ResourceKind.UniformBuffer:
-                            case ResourceKind.StructuredBufferReadOnly:
-                            case ResourceKind.StructuredBufferReadWrite:
-                                buffer = Util.AssertSubtype<IBindableResource, SDL3Buffer>(resource).Buffer;
-                                break;
+                        case ResourceKind.TextureReadOnly:
+                        case ResourceKind.TextureReadWrite:
+                            texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource).Texture;
+                            break;
 
-                            case ResourceKind.TextureReadOnly:
-                            case ResourceKind.TextureReadWrite:
-                                texture = Util.AssertSubtype<IBindableResource, SDL3Texture>(resource).Texture;
-                                break;
-
-                            case ResourceKind.Sampler:
-                                sampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource).Sampler;
-                                break;
-                        }
-                    }
-
-                    if (buffer != null)
-                    {
-                        uint slot = bufferIndex++;
-                        SDL_BindGPUComputeStorageBuffers(computePass, slot, &buffer, 1);
-                    }
-
-                    if (sampler != null)
-                    {
-                        uint slot = samplerIndex++;
-
-                        SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
-                        {
-                            sampler = sampler,
-                            texture = texture
-                        };
-
-                        SDL_BindGPUComputeSamplers(computePass, slot, &pairBinding, 1);
-                    }
-                    else if (texture != null)
-                    {
-                        uint slot = textureIndex++;
-                        SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
+                        case ResourceKind.Sampler:
+                            sampler = Util.AssertSubtype<IBindableResource, SDL3Sampler>(resource).Sampler;
+                            break;
                     }
                 }
 
-                computeResourceSetsActive = true;
+                if (buffer != null)
+                {
+                    uint slot = bufferIndex++;
+                    SDL_BindGPUComputeStorageBuffers(computePass, slot, &buffer, 1);
+                }
+
+                if (sampler != null)
+                {
+                    uint slot = samplerIndex++;
+
+                    SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
+                    {
+                        sampler = sampler,
+                        texture = texture
+                    };
+
+                    SDL_BindGPUComputeSamplers(computePass, slot, &pairBinding, 1);
+                }
+                else if (texture != null)
+                {
+                    uint slot = textureIndex++;
+                    SDL_BindGPUComputeStorageTextures(computePass, slot, &texture, 1);
+                }
             }
 
             return new ValueInvokeOnDisposal(this, static sender =>
@@ -752,7 +727,6 @@ namespace Veldrid.SDL3
                 SDL_EndGPUComputePass(cl.computePass);
                 cl.computePass = null;
                 cl.currentComputePipeline = null;
-                cl.computeResourceSetsActive = false;
             });
         }
 
