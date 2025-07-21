@@ -47,7 +47,7 @@ namespace Veldrid.SDL3
             else
                 throw new NotSupportedException("Current operating system not supported.");
 
-            Device = SDL_CreateGPUDevice(SDL3Formats.VdToSDLShaderFormat(BackendType), true, (byte*)null);
+            Device = SDL_CreateGPUDevice(SDL3Formats.VdToSDLShaderFormat(BackendType), options.Debug, (byte*)null);
 
             if (Device == null)
                 throw new InvalidOperationException("Failed to initialise SDL GPU device.");
