@@ -143,7 +143,7 @@ namespace Veldrid.SDL3
         {
             IntPtr mappedPtr;
             uint sizeInBytes;
-            uint offset = 0;
+            ulong offset = 0;
             uint rowPitch = 0;
             uint depthPitch = 0;
 
@@ -156,7 +156,12 @@ namespace Veldrid.SDL3
             {
                 SDL3Texture texture = Util.AssertSubtype<IMappableResource, SDL3Texture>(resource);
                 mappedPtr = SDL_MapGPUTransferBuffer(Device, texture.TransferBuffer, false);
-                texture.GetSubresourceLayout(subresource, out sizeInBytes, out offset, out rowPitch, out depthPitch);
+
+                Util.GetMipLevelAndArrayLayer(texture, subresource, out uint mipLevel, out uint arrayLayer);
+
+                sizeInBytes = texture.GetSubresourceSize(mipLevel);
+                offset = Util.ComputeSubresourceOffset(texture, mipLevel, arrayLayer);
+                texture.GetSubresourceLayout(mipLevel, out rowPitch, out depthPitch);
             }
 
             byte* dataPtr = (byte*)mappedPtr.ToPointer() + offset;
@@ -232,10 +237,24 @@ namespace Veldrid.SDL3
 
             if ((sdlTexture.Usage & TextureUsage.Staging) > 0)
             {
-                uint offset = FormatHelpers.GetDepthPitch(FormatHelpers.GetRowPitch(texture.Width, texture.Format), y, texture.Format) + FormatHelpers.GetRowPitch(x, texture.Format);
+                sdlTexture.GetSubresourceLayout(mipLevel, out uint dstRowPitch, out uint dstDepthPitch);
 
-                byte* mapped = (byte*)SDL_MapGPUTransferBuffer(Device, sdlTexture.TransferBuffer, false);
-                Unsafe.CopyBlock(mapped + offset, (byte*)source, sizeInBytes);
+                uint srcRowPitch = FormatHelpers.GetRowPitch(width, texture.Format);
+                uint srcDepthPitch = FormatHelpers.GetDepthPitch(srcRowPitch, height, texture.Format);
+                ulong dstOffset = Util.ComputeSubresourceOffset(sdlTexture, mipLevel, arrayLayer);
+
+                byte* stagingBufferPointer = (byte*)SDL_MapGPUTransferBuffer(Device, sdlTexture.TransferBuffer, false);
+
+                Util.CopyTextureRegion(
+                    source.ToPointer(),
+                    0, 0, 0,
+                    srcRowPitch, srcDepthPitch,
+                    stagingBufferPointer + dstOffset,
+                    x, y, z,
+                    dstRowPitch, dstDepthPitch,
+                    width, height, depth,
+                    texture.Format);
+
                 SDL_UnmapGPUTransferBuffer(Device, sdlTexture.TransferBuffer);
             }
             else

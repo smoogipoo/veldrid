@@ -1,6 +1,7 @@
 // Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
 // See the LICENCE file in the repository root for full licence text.
 
+using System;
 using SDL;
 using static SDL.SDL3;
 
@@ -75,14 +76,26 @@ namespace Veldrid.SDL3
             }
         }
 
-        public void GetSubresourceLayout(uint subresource, out uint sizeInBytes, out uint offset, out uint rowPitch, out uint depthPitch)
+        internal void GetSubresourceLayout(uint mipLevel, out uint rowPitch, out uint depthPitch)
         {
-            Util.GetMipLevelAndArrayLayer(this, subresource, out uint mipLevel, out uint arrayLayer);
+            uint blockSize = FormatHelpers.IsCompressedFormat(Format) ? 4u : 1u;
             Util.GetMipDimensions(this, mipLevel, out uint mipWidth, out uint mipHeight, out uint _);
-            offset = (uint)Util.ComputeSubresourceOffset(this, mipLevel, arrayLayer);
-            rowPitch = FormatHelpers.GetRowPitch(mipWidth, Format);
-            depthPitch = FormatHelpers.GetDepthPitch(rowPitch, mipHeight, Format);
-            sizeInBytes = depthPitch;
+            uint storageWidth = Math.Max(blockSize, mipWidth);
+            uint storageHeight = Math.Max(blockSize, mipHeight);
+            rowPitch = FormatHelpers.GetRowPitch(storageWidth, Format);
+            depthPitch = FormatHelpers.GetDepthPitch(rowPitch, storageHeight, Format);
+        }
+
+        internal uint GetSubresourceSize(uint mipLevel)
+        {
+            uint blockSize = FormatHelpers.IsCompressedFormat(Format) ? 4u : 1u;
+            Util.GetMipDimensions(this, mipLevel, out uint width, out uint height, out uint depth);
+            uint storageWidth = Math.Max(blockSize, width);
+            uint storageHeight = Math.Max(blockSize, height);
+            return depth * FormatHelpers.GetDepthPitch(
+                FormatHelpers.GetRowPitch(storageWidth, Format),
+                storageHeight,
+                Format);
         }
 
         public override bool IsDisposed => isDisposed;

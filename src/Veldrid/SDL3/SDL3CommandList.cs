@@ -262,28 +262,56 @@ namespace Veldrid.SDL3
 
             if ((source.Usage & TextureUsage.Staging) > 0)
             {
-                SDL_GPUTextureTransferInfo srcInfo = new SDL_GPUTextureTransferInfo
-                {
-                    transfer_buffer = sdlSource.TransferBuffer,
-                    offset = FormatHelpers.GetDepthPitch(FormatHelpers.GetRowPitch(source.Width, source.Format), srcY, source.Format) + FormatHelpers.GetRowPitch(srcX, source.Format),
-                    pixels_per_row = width,
-                    rows_per_layer = height
-                };
+                Util.GetMipDimensions(sdlSource, srcMipLevel, out uint mipWidth, out uint mipHeight, out uint _);
 
-                SDL_GPUTextureRegion dstRegion = new SDL_GPUTextureRegion
-                {
-                    texture = sdlDestination.Texture,
-                    mip_level = dstMipLevel,
-                    layer = dstBaseArrayLayer,
-                    x = dstX,
-                    y = dstY,
-                    z = dstZ,
-                    w = width,
-                    h = height,
-                    d = depth
-                };
+                uint blockSize = FormatHelpers.IsCompressedFormat(sdlSource.Format) ? 4u : 1u;
+                uint compressedSrcX = srcX / blockSize;
+                uint compressedSrcY = srcY / blockSize;
+                uint blockSizeInBytes = blockSize == 1
+                    ? FormatSizeHelpers.GetSizeInBytes(sdlSource.Format)
+                    : FormatHelpers.GetBlockSizeInBytes(sdlSource.Format);
 
-                SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, false);
+                sdlSource.GetSubresourceLayout(srcMipLevel, out uint srcRowPitch, out uint srcDepthPitch);
+
+                for (uint layer = 0; layer < layerCount; layer++)
+                {
+                    ulong srcSubresourceBase = Util.ComputeSubresourceOffset(sdlSource, srcMipLevel, srcBaseArrayLayer + layer);
+                    ulong sourceOffset = srcSubresourceBase
+                                         + srcDepthPitch * srcZ
+                                         + srcRowPitch * compressedSrcY
+                                         + blockSizeInBytes * compressedSrcX;
+
+                    uint copyWidth = width > mipWidth && width <= blockSize
+                        ? mipWidth
+                        : width;
+
+                    uint copyHeight = height > mipHeight && height <= blockSize
+                        ? mipHeight
+                        : height;
+
+                    SDL_GPUTextureTransferInfo srcInfo = new SDL_GPUTextureTransferInfo
+                    {
+                        offset = (uint)sourceOffset,
+                        transfer_buffer = sdlSource.TransferBuffer,
+                        pixels_per_row = srcRowPitch,
+                        rows_per_layer = srcDepthPitch
+                    };
+
+                    SDL_GPUTextureRegion dstRegion = new SDL_GPUTextureRegion
+                    {
+                        texture = sdlDestination.Texture,
+                        mip_level = dstMipLevel,
+                        layer = dstBaseArrayLayer + layer,
+                        x = dstX,
+                        y = dstY,
+                        z = dstZ,
+                        w = copyWidth,
+                        h = copyHeight,
+                        d = depth
+                    };
+
+                    SDL_UploadToGPUTexture(copyPass, &srcInfo, &dstRegion, false);
+                }
             }
             else
             {
