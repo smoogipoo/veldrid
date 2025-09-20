@@ -501,13 +501,19 @@ namespace Veldrid.SDL3
                 SDL_BindGPUGraphicsPipeline(renderPass, currentGraphicsPipeline.Pipeline);
             }
 
-            uint bufferIndex = 0;
-            uint textureIndex = 0;
-            uint samplerIndex = 0;
+            uint vertexUniformBufferIndex = 0;
+            uint fragmentUniformBufferIndex = 0;
+            uint vertexTextureIndex = 0;
+            uint fragmentTextureIndex = 0;
+            uint vertexSamplerIndex = 0;
+            uint fragmentSamplerIndex = 0;
 
             for (int index = 0; index < currentGraphicsPipeline.ResourceLayoutCount; index++)
             {
                 SDL3ResourceSet set = currentGraphicsResourceSets[index];
+
+                if (set == null)
+                    continue;
 
                 SDL_GPUBuffer* buffer = null;
                 SDL_GPUTexture* texture = null;
@@ -541,18 +547,14 @@ namespace Veldrid.SDL3
 
                 if (buffer != null)
                 {
-                    uint slot = bufferIndex++;
-
                     if ((stages & ShaderStages.Vertex) > 0)
-                        SDL_BindGPUVertexStorageBuffers(renderPass, slot, &buffer, 1);
+                        SDL_BindGPUVertexStorageBuffers(renderPass, 0, &buffer, 1);
                     if ((stages & ShaderStages.Fragment) > 0)
-                        SDL_BindGPUFragmentStorageBuffers(renderPass, slot, &buffer, 1);
+                        SDL_BindGPUFragmentStorageBuffers(renderPass, 0, &buffer, 1);
                 }
 
                 if (sampler != null)
                 {
-                    uint slot = samplerIndex++;
-
                     SDL_GPUTextureSamplerBinding pairBinding = new SDL_GPUTextureSamplerBinding
                     {
                         sampler = sampler,
@@ -560,18 +562,16 @@ namespace Veldrid.SDL3
                     };
 
                     if ((stages & ShaderStages.Vertex) > 0)
-                        SDL_BindGPUVertexSamplers(renderPass, slot, &pairBinding, 1);
+                        SDL_BindGPUVertexSamplers(renderPass, vertexSamplerIndex++, &pairBinding, 1);
                     if ((stages & ShaderStages.Fragment) > 0)
-                        SDL_BindGPUFragmentSamplers(renderPass, slot, &pairBinding, 1);
+                        SDL_BindGPUFragmentSamplers(renderPass, fragmentSamplerIndex++, &pairBinding, 1);
                 }
                 else if (texture != null)
                 {
-                    uint slot = textureIndex++;
-
                     if ((stages & ShaderStages.Vertex) > 0)
-                        SDL_BindGPUVertexStorageTextures(renderPass, slot, &texture, 1);
+                        SDL_BindGPUVertexStorageTextures(renderPass, vertexTextureIndex++, &texture, 1);
                     if ((stages & ShaderStages.Fragment) > 0)
-                        SDL_BindGPUFragmentStorageTextures(renderPass, slot, &texture, 1);
+                        SDL_BindGPUFragmentStorageTextures(renderPass, fragmentTextureIndex++, &texture, 1);
                 }
             }
 
