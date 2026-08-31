@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using Veldrid.MetalBindings;
 
 namespace Veldrid.MTL
@@ -9,7 +11,27 @@ namespace Veldrid.MTL
 
         public override bool IsDisposed => disposed;
 
-        public CAMetalDrawable CurrentDrawable => drawable;
+        public CAMetalDrawable CurrentDrawable
+        {
+            get
+            {
+                if (drawableQueue.TryPeek(out var item))
+                    return item.drawable;
+
+                return default;
+            }
+        }
+
+        public double CurrentPresentationTime
+        {
+            get
+            {
+                if (drawableQueue.TryPeek(out var item))
+                    return item.timestamp;
+
+                return 0;
+            }
+        }
 
         public override bool SyncToVerticalBlank
         {
@@ -20,15 +42,16 @@ namespace Veldrid.MTL
             }
         }
 
+        private readonly ConcurrentQueue<(CAMetalDrawable drawable, double timestamp)> drawableQueue = new ConcurrentQueue<(CAMetalDrawable, double)>();
+
         public override string Name { get; set; }
         private readonly MtlSwapchainFramebuffer framebuffer;
         private readonly MtlGraphicsDevice gd;
+        private MtlcaDisplayLink displayLink;
         private CAMetalLayer metalLayer;
         private UIView uiView; // Valid only when a UIViewSwapchainSource is used.
         private bool syncToVerticalBlank;
         private bool disposed;
-
-        private CAMetalDrawable drawable;
 
         public MtlSwapchain(MtlGraphicsDevice gd, ref SwapchainDescription description)
         {
@@ -91,6 +114,7 @@ namespace Veldrid.MTL
                 ? PixelFormat.B8G8R8A8UNormSRgb
                 : PixelFormat.B8G8R8A8UNorm;
 
+            metalLayer.maximumDrawableCount = 2;
             metalLayer.device = this.gd.Device;
             metalLayer.pixelFormat = MtlFormats.VdToMtlPixelFormat(format, false);
             metalLayer.framebufferOnly = true;
@@ -104,15 +128,30 @@ namespace Veldrid.MTL
                 description.DepthFormat,
                 format);
 
-            getNextDrawable();
+            MtlcaDisplayLink.Callback += onDisplayLinkCallback;
+
+            displayLink = new MtlcaDisplayLink(metalLayer);
+            displayLink.Paused = false;
+        }
+
+        private Stopwatch stopwatch = new Stopwatch();
+
+        private void onDisplayLinkCallback(CAMetalDisplayLink link, CAMetalDisplayLinkUpdate update)
+        {
+            Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+            stopwatch.Restart();
+
+            ObjectiveCRuntime.retain(update.drawable);
+            drawableQueue.Enqueue((update.drawable, update.targetPresentationTimestamp));
         }
 
         #region Disposal
 
         public override void Dispose()
         {
-            if (drawable.NativePtr != IntPtr.Zero) ObjectiveCRuntime.release(drawable.NativePtr);
             framebuffer.Dispose();
+            displayLink.Dispose();
+
             ObjectiveCRuntime.release(metalLayer.NativePtr);
 
             disposed = true;
@@ -126,38 +165,26 @@ namespace Veldrid.MTL
                 metalLayer.frame = uiView.frame;
 
             metalLayer.drawableSize = new CGSize(width, height);
-
-            getNextDrawable();
         }
 
         public bool EnsureDrawableAvailable()
         {
-            return !drawable.IsNull || getNextDrawable();
+            if (drawableQueue.IsEmpty)
+                return false;
+
+            if (drawableQueue.TryPeek(out var item))
+            {
+                framebuffer.UpdateTextures(item.drawable, metalLayer.drawableSize);
+                return true;
+            }
+
+            return false;
         }
 
         public void InvalidateDrawable()
         {
-            ObjectiveCRuntime.release(drawable.NativePtr);
-            drawable = default;
-        }
-
-        private bool getNextDrawable()
-        {
-            if (!drawable.IsNull) ObjectiveCRuntime.release(drawable.NativePtr);
-
-            using (NSAutoreleasePool.Begin())
-            {
-                drawable = metalLayer.nextDrawable();
-
-                if (!drawable.IsNull)
-                {
-                    ObjectiveCRuntime.retain(drawable.NativePtr);
-                    framebuffer.UpdateTextures(drawable, metalLayer.drawableSize);
-                    return true;
-                }
-
-                return false;
-            }
+            if (drawableQueue.TryDequeue(out var item))
+                ObjectiveCRuntime.release(item.drawable);
         }
 
         private void setSyncToVerticalBlank(bool value)

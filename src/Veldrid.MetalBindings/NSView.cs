@@ -28,10 +28,18 @@ namespace Veldrid.MetalBindings
                 ? CGRect_objc_msgSend(NativePtr, sel_frame)
                 : objc_msgSend_stret<CGRect>(NativePtr, sel_frame);
 
+        public int layerContentsRedrawPolicy
+        {
+            get => objc_msgSend<int>(NativePtr, sel_layerContentsRedrawPolicy);
+            set => objc_msgSend(NativePtr, sel_setLayerContentsRedrawPolicy, value);
+        }
+
         private static readonly Selector sel_wantsLayer = "wantsLayer";
         private static readonly Selector sel_setWantsLayer = "setWantsLayer:";
         private static readonly Selector sel_layer = "layer";
         private static readonly Selector sel_setLayer = "setLayer:";
         private static readonly Selector sel_frame = "frame";
+        private static readonly Selector sel_layerContentsRedrawPolicy = "layerContentsRedrawPolicy";
+        private static readonly Selector sel_setLayerContentsRedrawPolicy = "setLayerContentsRedrawPolicy:";
     }
 }

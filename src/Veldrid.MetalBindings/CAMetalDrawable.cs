@@ -8,6 +8,7 @@ namespace Veldrid.MetalBindings
     public struct CAMetalDrawable
     {
         public readonly IntPtr NativePtr;
+        public static implicit operator IntPtr(CAMetalDrawable d) => d.NativePtr;
         public bool IsNull => NativePtr == IntPtr.Zero;
         public MTLTexture texture => objc_msgSend<MTLTexture>(NativePtr, Selectors.texture);
     }

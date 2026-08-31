@@ -17,6 +17,8 @@ namespace Veldrid.MetalBindings
 
         public void presentDrawable(IntPtr drawable) => objc_msgSend(NativePtr, sel_presentDrawable, drawable);
 
+        public void presentDrawableAtTime(IntPtr drawable, double time) => objc_msgSend(NativePtr, sel_presentDrawable, drawable, time);
+
         public void commit() => objc_msgSend(NativePtr, sel_commit);
 
         public MTLBlitCommandEncoder blitCommandEncoder()
@@ -37,6 +39,7 @@ namespace Veldrid.MetalBindings
 
         private static readonly Selector sel_renderCommandEncoderWithDescriptor = "renderCommandEncoderWithDescriptor:";
         private static readonly Selector sel_presentDrawable = "presentDrawable:";
+        private static readonly Selector sel_presentDrawableAtTime = "presentDrawable:atTime:";
         private static readonly Selector sel_commit = "commit";
         private static readonly Selector sel_blitCommandEncoder = "blitCommandEncoder";
         private static readonly Selector sel_computeCommandEncoder = "computeCommandEncoder";

@@ -47,6 +47,8 @@ namespace Veldrid.MetalBindings
         [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend")]
         public static extern void objc_msgSend(IntPtr receiver, Selector selector, IntPtr a, UIntPtr b);
         [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend")]
+        public static extern void objc_msgSend(IntPtr receiver, Selector selector, IntPtr a, IntPtr b);
+        [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend")]
         public static extern void objc_msgSend(IntPtr receiver, Selector selector, MTLViewport a);
         [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend")]
         public static extern void objc_msgSend(IntPtr receiver, Selector selector, MTLScissorRect a);
@@ -224,6 +226,8 @@ namespace Veldrid.MetalBindings
         public static extern void objc_msgSend(IntPtr receiver, Selector selector, float a, float b, float c, float d);
         [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend")]
         public static extern void objc_msgSend(IntPtr receiver, Selector selector, IntPtr b);
+        [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend")]
+        public static extern void objc_msgSend(IntPtr receiver, Selector selector, IntPtr b, double a);
 
         [DllImport(ObjCLibrary, EntryPoint = "objc_msgSend_stret")]
         public static extern void objc_msgSend_stret(void* retPtr, IntPtr receiver, Selector selector);
@@ -258,7 +262,10 @@ namespace Veldrid.MetalBindings
         public static extern IntPtr objc_getClass(byte* namePtr);
 
         [DllImport(ObjCLibrary)]
-        public static extern ObjCClass object_getClass(IntPtr obj);
+        public static extern ObjCClass objc_allocateClassPair(ObjCClass superClass, byte* name, uint extraBytes);
+
+        [DllImport(ObjCLibrary)]
+        public static extern void objc_registerClassPair(ObjCClass cls);
 
         [DllImport(ObjCLibrary)]
         public static extern IntPtr class_getProperty(ObjCClass cls, byte* namePtr);
@@ -274,6 +281,9 @@ namespace Veldrid.MetalBindings
 
         [DllImport(ObjCLibrary)]
         public static extern ObjectiveCMethod* class_copyMethodList(ObjCClass cls, out uint outCount);
+
+        [DllImport(ObjCLibrary)]
+        public static extern bool class_addMethod(IntPtr cls, Selector name, IntPtr imp, byte* types);
 
         [DllImport(ObjCLibrary)]
         public static extern void free(IntPtr receiver);

@@ -6,6 +6,7 @@ namespace Veldrid.MetalBindings
     public struct CAMetalLayer
     {
         public readonly IntPtr NativePtr;
+        public static implicit operator IntPtr(CAMetalLayer l) => l.NativePtr;
 
         public CAMetalLayer(IntPtr ptr) => NativePtr = ptr;
 
@@ -69,6 +70,12 @@ namespace Veldrid.MetalBindings
             set => objc_msgSend(NativePtr, sel_setDisplaySyncEnabled, value);
         }
 
+        public uint maximumDrawableCount
+        {
+            get => uint_objc_msgSend(NativePtr, sel_maximumDrawableCount);
+            set => objc_msgSend(NativePtr, sel_maximumDrawableCount, 2);
+        }
+
         private static readonly ObjCClass s_class = new ObjCClass(nameof(CAMetalLayer));
         private static readonly Selector sel_device = "device";
         private static readonly Selector sel_setDevice = "setDevice:";
@@ -85,5 +92,6 @@ namespace Veldrid.MetalBindings
         private static readonly Selector sel_displaySyncEnabled = "displaySyncEnabled";
         private static readonly Selector sel_setDisplaySyncEnabled = "setDisplaySyncEnabled:";
         private static readonly Selector sel_nextDrawable = "nextDrawable";
+        private static readonly Selector sel_maximumDrawableCount = "maximumDrawableCount";
     }
 }
