@@ -81,12 +81,12 @@ namespace Veldrid.MetalBindings
             public readonly IntPtr NativePtr;
             public static implicit operator IntPtr(RunLoopDelegate l) => l.NativePtr;
 
-            public static RunLoopDelegate Create(delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, IntPtr, void> callback)
+            public static RunLoopDelegate Create(RunLoopDelegateCallback callback)
             {
-                var cls = ObjCClass.Create($"VeldridRunLoop", cls =>
+                var cls = ObjCClass.Create($"VeldridRunLoop-{Guid.NewGuid():N}", cls =>
                 {
                     fixed (byte* typeNamesPtr = "v@:@@\0"u8)
-                        class_addMethod(cls, sel_needsUpdate, (IntPtr)callback, typeNamesPtr);
+                        class_addMethod(cls, sel_needsUpdate, Marshal.GetFunctionPointerForDelegate(callback), typeNamesPtr);
                 });
 
                 return cls.AllocInit<RunLoopDelegate>();
@@ -97,5 +97,7 @@ namespace Veldrid.MetalBindings
                 release(this);
             }
         }
+
+        public delegate void RunLoopDelegateCallback(IntPtr self, IntPtr cmd, IntPtr link, IntPtr update);
     }
 }

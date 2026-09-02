@@ -11,43 +11,27 @@ namespace Veldrid.MTL
 
         public override bool IsDisposed => disposed;
 
-        public CAMetalDrawable CurrentDrawable
-        {
-            get
-            {
-                if (drawableQueue.TryPeek(out var item))
-                    return item.drawable;
-
-                return default;
-            }
-        }
-
-        public double CurrentPresentationTime
-        {
-            get
-            {
-                if (drawableQueue.TryPeek(out var item))
-                    return item.timestamp;
-
-                return 0;
-            }
-        }
+        public CAMetalDrawable CurrentDrawable => currentDrawable.Drawable;
 
         public override bool SyncToVerticalBlank
         {
             get => syncToVerticalBlank;
             set
             {
-                if (syncToVerticalBlank != value) setSyncToVerticalBlank(value);
+                if (syncToVerticalBlank != value)
+                    setSyncToVerticalBlank(value);
             }
         }
 
-        private readonly ConcurrentQueue<(CAMetalDrawable drawable, double timestamp)> drawableQueue = new ConcurrentQueue<(CAMetalDrawable, double)>();
+        private readonly ConcurrentQueue<DrawableUsage> pendingDrawables = new ConcurrentQueue<DrawableUsage>();
 
         public override string Name { get; set; }
         private readonly MtlSwapchainFramebuffer framebuffer;
         private readonly MtlGraphicsDevice gd;
+
         private MtlcaDisplayLink displayLink;
+
+        private DrawableUsage currentDrawable;
         private CAMetalLayer metalLayer;
         private UIView uiView; // Valid only when a UIViewSwapchainSource is used.
         private bool syncToVerticalBlank;
@@ -120,49 +104,16 @@ namespace Veldrid.MTL
             metalLayer.framebufferOnly = true;
             metalLayer.drawableSize = new CGSize(width, height);
 
+            framebuffer = new MtlSwapchainFramebuffer(gd, this, description.DepthFormat, format);
+
             setSyncToVerticalBlank(syncToVerticalBlank);
-
-            framebuffer = new MtlSwapchainFramebuffer(
-                gd,
-                this,
-                description.DepthFormat,
-                format);
-
-            MtlcaDisplayLink.Callback += onDisplayLinkCallback;
-
-            displayLink = new MtlcaDisplayLink(metalLayer);
-            displayLink.Paused = false;
         }
 
         private readonly Stopwatch frameStopwatch = new Stopwatch();
 
         private void onDisplayLinkCallback(CAMetalDisplayLink link, CAMetalDisplayLinkUpdate update)
         {
-            // Todo: This should be moved off the callback and into the draw thread.
-            if (frameStopwatch.Elapsed.TotalMilliseconds > 0)
-            {
-                double currentTime = CoreAnimation.CurrentMediaTime();
-
-                // The amount of time that we are given to render the current frame. If we take too long, we'll fall into the next Vsync interval.
-                TimeSpan timeToRender = TimeSpan.FromSeconds(update.targetTimestamp - currentTime);
-
-                // To get as up-to-date input as possible, we'll delay drawing the current frame until as close to the Vsync interval as possible.
-                // A simple heuristic is to assume that frame times are generally static or ramping between frames.
-                // But we definitely do not want to miss the Vsync interval, so we apply a little lenience.
-                TimeSpan timeToWake = timeToRender - TimeSpan.FromMilliseconds(frameStopwatch.Elapsed.TotalMilliseconds + 1);
-
-                if (timeToWake > TimeSpan.Zero)
-                {
-                    LibSystem.mach_timebase_info(out LibSystem.mach_timebase_info_data_t tb);
-                    ulong duration = (ulong)(timeToWake.TotalNanoseconds * tb.denom / tb.numer);
-                    LibSystem.mach_wait_until(LibSystem.mach_absolute_time() + duration);
-                }
-            }
-
-            frameStopwatch.Restart();
-
-            ObjectiveCRuntime.retain(update.drawable);
-            drawableQueue.Enqueue((update.drawable, update.targetPresentationTimestamp));
+            pendingDrawables.Enqueue(new DrawableUsage(update.drawable, update.targetTimestamp));
         }
 
         #region Disposal
@@ -170,7 +121,7 @@ namespace Veldrid.MTL
         public override void Dispose()
         {
             framebuffer.Dispose();
-            displayLink.Dispose();
+            displayLink?.Dispose();
 
             ObjectiveCRuntime.release(metalLayer.NativePtr);
 
@@ -189,12 +140,33 @@ namespace Veldrid.MTL
 
         public bool EnsureDrawableAvailable()
         {
-            if (drawableQueue.IsEmpty)
-                return false;
+            if (!CurrentDrawable.IsNull)
+                return true;
 
-            if (drawableQueue.TryPeek(out var item))
+            if (displayLink == null)
             {
-                framebuffer.UpdateTextures(item.drawable, metalLayer.drawableSize);
+                using (NSAutoreleasePool.Begin())
+                {
+                    var drawable = metalLayer.nextDrawable();
+                    if (drawable.IsNull)
+                        return false;
+
+                    currentDrawable = new DrawableUsage(drawable, 0);
+                    framebuffer.UpdateTextures(CurrentDrawable, metalLayer.drawableSize);
+
+                    frameStopwatch.Restart();
+                    return true;
+                }
+            }
+
+            if (pendingDrawables.TryDequeue(out var pending))
+            {
+                pending.Sleep(frameStopwatch.Elapsed);
+
+                currentDrawable = pending;
+                framebuffer.UpdateTextures(CurrentDrawable, metalLayer.drawableSize);
+
+                frameStopwatch.Restart();
                 return true;
             }
 
@@ -205,8 +177,8 @@ namespace Veldrid.MTL
         {
             frameStopwatch.Stop();
 
-            if (drawableQueue.TryDequeue(out var item))
-                ObjectiveCRuntime.release(item.drawable);
+            currentDrawable.Dispose();
+            currentDrawable = default;
         }
 
         private void setSyncToVerticalBlank(bool value)
@@ -216,7 +188,56 @@ namespace Veldrid.MTL
             if (gd.MetalFeatures.MaxFeatureSet == MTLFeatureSet.macOS_GPUFamily1_v3
                 || gd.MetalFeatures.MaxFeatureSet == MTLFeatureSet.macOS_GPUFamily1_v4
                 || gd.MetalFeatures.MaxFeatureSet == MTLFeatureSet.macOS_GPUFamily2_v1)
+            {
                 metalLayer.displaySyncEnabled = value;
+            }
+
+            if (value)
+                displayLink = new MtlcaDisplayLink(metalLayer, onDisplayLinkCallback);
+            else
+            {
+                displayLink.Dispose();
+                displayLink = null;
+            }
+        }
+
+        private readonly struct DrawableUsage : IDisposable
+        {
+            public readonly CAMetalDrawable Drawable;
+            private readonly double targetTimestamp;
+
+            public DrawableUsage(CAMetalDrawable drawable, double targetTimestamp)
+            {
+                Drawable = drawable;
+                this.targetTimestamp = targetTimestamp;
+
+                ObjectiveCRuntime.retain(Drawable);
+            }
+
+            public void Sleep(TimeSpan lastFrameTime)
+            {
+                double currentTime = CoreAnimation.CurrentMediaTime();
+
+                // The amount of time that we are given to render the current frame. If we take too long, we'll fall into the next Vsync interval.
+                TimeSpan timeToRender = TimeSpan.FromSeconds(targetTimestamp - currentTime);
+
+                // To get as up-to-date input as possible, we'll delay drawing the current frame until as close to the Vsync interval as possible.
+                // A simple heuristic is to assume that frame times are generally static or ramping between frames.
+                // But we definitely do not want to miss the Vsync interval, so we apply a little lenience.
+                TimeSpan timeToWake = timeToRender - lastFrameTime - TimeSpan.FromMilliseconds(1);
+
+                if (timeToWake > TimeSpan.Zero)
+                {
+                    LibSystem.mach_timebase_info(out LibSystem.mach_timebase_info_data_t tb);
+                    ulong duration = (ulong)(timeToWake.TotalNanoseconds * tb.denom / tb.numer);
+                    LibSystem.mach_wait_until(LibSystem.mach_absolute_time() + duration);
+                }
+            }
+
+            public void Dispose()
+            {
+                ObjectiveCRuntime.release(Drawable);
+            }
         }
     }
 }

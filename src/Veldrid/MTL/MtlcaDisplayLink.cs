@@ -2,35 +2,34 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Veldrid.MetalBindings;
 
 namespace Veldrid.MTL
 {
-    internal unsafe class MtlcaDisplayLink : IMtlDisplayLink
+    internal class MtlcaDisplayLink : IMtlDisplayLink
     {
-        // Todo: This is only static because I'm investigating some TOTALLY F***ED debugger behaviour.
-        public static event Action<CAMetalDisplayLink, CAMetalDisplayLinkUpdate> Callback;
+        private readonly Action<CAMetalDisplayLink, CAMetalDisplayLinkUpdate> callback;
+        private readonly CAMetalDisplayLink.RunLoopDelegateCallback runLoopCallbackHandler;
 
         private CAMetalDisplayLink displayLink;
         private CAMetalDisplayLink.RunLoopDelegate runLoopDelegate;
 
-        public MtlcaDisplayLink(CAMetalLayer layer)
+        public MtlcaDisplayLink(CAMetalLayer layer, Action<CAMetalDisplayLink, CAMetalDisplayLinkUpdate> callback)
         {
-            runLoopDelegate = CAMetalDisplayLink.RunLoopDelegate.Create(&onCallback);
+            this.callback = callback;
+
+            runLoopCallbackHandler = onCallback;
+            runLoopDelegate = CAMetalDisplayLink.RunLoopDelegate.Create(runLoopCallbackHandler);
 
             displayLink = CAMetalDisplayLink.Create(layer);
             displayLink.@delegate = runLoopDelegate;
-            displayLink.paused = true;
             displayLink.preferredFrameLatency = 1.0f;
             displayLink.addToRunLoop(NSRunLoop.mainRunLoop(), CFRunLoopMode.CommonModes);
         }
 
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-        private static void onCallback(IntPtr self, IntPtr cmd, IntPtr link, IntPtr update)
+        private void onCallback(IntPtr self, IntPtr cmd, IntPtr link, IntPtr update)
         {
-            Callback?.Invoke(new CAMetalDisplayLink(link), new CAMetalDisplayLinkUpdate(update));
+            callback?.Invoke(new CAMetalDisplayLink(link), new CAMetalDisplayLinkUpdate(update));
         }
 
         public bool Paused
