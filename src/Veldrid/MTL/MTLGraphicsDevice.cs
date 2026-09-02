@@ -525,7 +525,7 @@ namespace Veldrid.MTL
                 using (NSAutoreleasePool.Begin())
                 {
                     var submitCb = commandQueue.commandBuffer();
-                    submitCb.presentDrawableAtTime(currentDrawablePtr, mtlSc.CurrentPresentationTime);
+                    submitCb.presentDrawable(currentDrawablePtr);
                     submitCb.commit();
                 }
 
