@@ -20,7 +20,7 @@ namespace Veldrid.MetalBindings
 
         public double targetPresentationTimestamp => double_objc_msgSend(NativePtr, sel_targetPresentationTimestamp);
 
-        public double targetTimestamp => double_objc_msgSend(NativePtr, sel_drawable);
+        public double targetTimestamp => double_objc_msgSend(NativePtr, sel_targetTimestamp);
 
         public CAMetalDrawable drawable => objc_msgSend<CAMetalDrawable>(NativePtr, sel_drawable);
     }

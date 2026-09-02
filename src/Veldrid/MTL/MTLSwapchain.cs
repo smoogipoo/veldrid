@@ -134,12 +134,17 @@ namespace Veldrid.MTL
             displayLink.Paused = false;
         }
 
-        private Stopwatch stopwatch = new Stopwatch();
+        private readonly Stopwatch frameStopwatch = new Stopwatch();
 
         private void onDisplayLinkCallback(CAMetalDisplayLink link, CAMetalDisplayLinkUpdate update)
         {
-            Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
-            stopwatch.Restart();
+            double currentTime = CoreAnimation.CurrentMediaTime();
+            TimeSpan timeToUpdate = TimeSpan.FromSeconds(update.targetTimestamp - currentTime);
+            TimeSpan timeToDraw = TimeSpan.FromSeconds(update.targetPresentationTimestamp - currentTime);
+            TimeSpan timeUpdateToDraw = timeToDraw - timeToUpdate;
+            Console.WriteLine($"u: {timeToUpdate.Milliseconds} | d: {timeToDraw.Milliseconds} | (d - u): {timeUpdateToDraw.Milliseconds}");
+
+            frameStopwatch.Restart();
 
             ObjectiveCRuntime.retain(update.drawable);
             drawableQueue.Enqueue((update.drawable, update.targetPresentationTimestamp));
@@ -183,6 +188,10 @@ namespace Veldrid.MTL
 
         public void InvalidateDrawable()
         {
+            frameStopwatch.Stop();
+
+            // Console.WriteLine($"r: {frameStopwatch.ElapsedMilliseconds}");
+
             if (drawableQueue.TryDequeue(out var item))
                 ObjectiveCRuntime.release(item.drawable);
         }
