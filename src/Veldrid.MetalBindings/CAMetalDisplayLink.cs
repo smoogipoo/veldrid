@@ -17,6 +17,9 @@ namespace Veldrid.MetalBindings
         private static readonly Selector sel_isPaused = "isPaused";
         private static readonly Selector sel_setPaused = "setPaused:";
 
+        private static readonly Selector sel_preferredFrameRateRange = "preferredFrameRateRange";
+        private static readonly Selector sel_setPreferredFrameRateRange = "setPreferredFrameRateRange:";
+
         private static readonly Selector sel_preferredFrameLatency = "preferredFrameLatency";
         private static readonly Selector sel_setPreferredFrameLatency = "setPreferredFrameLatency:";
 
@@ -41,6 +44,12 @@ namespace Veldrid.MetalBindings
         {
             get => bool8_objc_msgSend(NativePtr, sel_isPaused);
             set => objc_msgSend(NativePtr, sel_setPaused, value);
+        }
+
+        public CAFrameRateRange preferredFrameRateRange
+        {
+            get => CAFrameRateRange_objc_msgSend(NativePtr, sel_preferredFrameRateRange);
+            set => objc_msgSend(NativePtr, sel_setPreferredFrameRateRange, value);
         }
 
         public float preferredFrameLatency
