@@ -23,7 +23,6 @@ namespace Veldrid.MTL
             displayLink = CAMetalDisplayLink.Create(layer);
             displayLink.@delegate = runLoopDelegate;
             displayLink.paused = true;
-            displayLink.preferredFrameRateRange = CAFrameRateRange.Create(120, 120, 120);
             displayLink.preferredFrameLatency = 1.0f;
             displayLink.addToRunLoop(NSRunLoop.mainRunLoop(), CFRunLoopMode.CommonModes);
         }

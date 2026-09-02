@@ -134,27 +134,32 @@ namespace Veldrid.MTL
             displayLink.Paused = false;
         }
 
-        private readonly Stopwatch frameStopwatch = Stopwatch.StartNew();
+        private readonly Stopwatch frameStopwatch = new Stopwatch();
 
         private void onDisplayLinkCallback(CAMetalDisplayLink link, CAMetalDisplayLinkUpdate update)
         {
-            double currentTime = CoreAnimation.CurrentMediaTime();
-            TimeSpan timeToSimulate = TimeSpan.FromSeconds(update.targetTimestamp - currentTime);
-            TimeSpan timeToRender = TimeSpan.FromSeconds(update.targetPresentationTimestamp - currentTime);
-            TimeSpan timeToDisplay = timeToRender - timeToSimulate;
-            Console.WriteLine(
-                $"cb: {frameStopwatch.ElapsedMilliseconds} | tts: {timeToSimulate.Milliseconds} | ttr: {timeToRender.Milliseconds} | ttd: {timeToDisplay.Milliseconds}");
+            // Todo: This should be moved off the callback and into the draw thread.
+            if (frameStopwatch.Elapsed.TotalMilliseconds > 0)
+            {
+                double currentTime = CoreAnimation.CurrentMediaTime();
+
+                // The amount of time that we are given to render the current frame. If we take too long, we'll fall into the next Vsync interval.
+                TimeSpan timeToRender = TimeSpan.FromSeconds(update.targetTimestamp - currentTime);
+
+                // To get as up-to-date input as possible, we'll delay drawing the current frame until as close to the Vsync interval as possible.
+                // A simple heuristic is to assume that frame times are generally static or ramping between frames.
+                // But we definitely do not want to miss the Vsync interval, so we apply a little lenience.
+                TimeSpan timeToWake = timeToRender - TimeSpan.FromMilliseconds(frameStopwatch.Elapsed.TotalMilliseconds + 1);
+
+                if (timeToWake > TimeSpan.Zero)
+                {
+                    LibSystem.mach_timebase_info(out LibSystem.mach_timebase_info_data_t tb);
+                    ulong duration = (ulong)(timeToWake.TotalNanoseconds * tb.denom / tb.numer);
+                    LibSystem.mach_wait_until(LibSystem.mach_absolute_time() + duration);
+                }
+            }
 
             frameStopwatch.Restart();
-
-            TimeSpan timeToWake = timeToSimulate - TimeSpan.FromMilliseconds(3);
-
-            if (timeToWake > TimeSpan.Zero)
-            {
-                LibSystem.mach_timebase_info(out LibSystem.mach_timebase_info_data_t tb);
-                ulong duration = (ulong)(timeToWake.TotalSeconds * 1e9) * tb.denom / tb.numer;
-                LibSystem.mach_wait_until(LibSystem.mach_absolute_time() + duration);
-            }
 
             ObjectiveCRuntime.retain(update.drawable);
             drawableQueue.Enqueue((update.drawable, update.targetPresentationTimestamp));
@@ -198,6 +203,8 @@ namespace Veldrid.MTL
 
         public void InvalidateDrawable()
         {
+            frameStopwatch.Stop();
+
             if (drawableQueue.TryDequeue(out var item))
                 ObjectiveCRuntime.release(item.drawable);
         }
