@@ -147,6 +147,15 @@ namespace Veldrid.MTL
 
             frameStopwatch.Restart();
 
+            TimeSpan timeToWake = timeToSimulate - TimeSpan.FromMilliseconds(3);
+
+            if (timeToWake > TimeSpan.Zero)
+            {
+                LibSystem.mach_timebase_info(out LibSystem.mach_timebase_info_data_t tb);
+                ulong duration = (ulong)(timeToWake.TotalSeconds * 1e9) * tb.denom / tb.numer;
+                LibSystem.mach_wait_until(LibSystem.mach_absolute_time() + duration);
+            }
+
             ObjectiveCRuntime.retain(update.drawable);
             drawableQueue.Enqueue((update.drawable, update.targetPresentationTimestamp));
         }
