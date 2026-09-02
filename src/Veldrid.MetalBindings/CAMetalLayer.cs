@@ -50,6 +50,12 @@ namespace Veldrid.MetalBindings
             set => objc_msgSend(NativePtr, sel_setDrawableSize, value);
         }
 
+        public bool presentsWithTransaction
+        {
+            get => bool8_objc_msgSend(NativePtr, sel_presentsWithTransaction);
+            set => objc_msgSend(NativePtr, sel_setPresentsWithTransaction, value);
+        }
+
         public CGRect frame
         {
             get => CGRect_objc_msgSend(NativePtr, sel_frame);
@@ -85,6 +91,10 @@ namespace Veldrid.MetalBindings
         private static readonly Selector sel_setFramebufferOnly = "setFramebufferOnly:";
         private static readonly Selector sel_drawableSize = "drawableSize";
         private static readonly Selector sel_setDrawableSize = "setDrawableSize:";
+
+        private static readonly Selector sel_presentsWithTransaction = "presentsWithTransaction";
+        private static readonly Selector sel_setPresentsWithTransaction = "setPresentsWithTransaction:";
+
         private static readonly Selector sel_frame = "frame";
         private static readonly Selector sel_setFrame = "setFrame:";
         private static readonly Selector sel_isOpaque = "isOpaque";
