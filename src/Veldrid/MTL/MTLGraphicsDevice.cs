@@ -448,9 +448,7 @@ namespace Veldrid.MTL
 
         private protected override void WaitForNextFrameReadyCore()
         {
-            while (!mainSwapchain.EnsureDrawableAvailable())
-            {
-            }
+            mainSwapchain.EnsureDrawableAvailable();
         }
 
         private protected override bool GetPixelFormatSupportCore(

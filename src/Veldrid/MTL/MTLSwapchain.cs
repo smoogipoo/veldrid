@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading;
 using Veldrid.MetalBindings;
 
 namespace Veldrid.MTL
@@ -24,6 +25,7 @@ namespace Veldrid.MTL
         }
 
         private readonly ConcurrentQueue<DrawableUsage> pendingDrawables = new ConcurrentQueue<DrawableUsage>();
+        private readonly SemaphoreSlim nextDrawableReady = new SemaphoreSlim(0);
 
         public override string Name { get; set; }
         private readonly MtlSwapchainFramebuffer framebuffer;
@@ -114,6 +116,7 @@ namespace Veldrid.MTL
         private void onDisplayLinkCallback(CAMetalDisplayLink link, CAMetalDisplayLinkUpdate update)
         {
             pendingDrawables.Enqueue(new DrawableUsage(update.drawable, update.targetTimestamp));
+            nextDrawableReady.Release();
         }
 
         #region Disposal
@@ -158,6 +161,8 @@ namespace Veldrid.MTL
                     return true;
                 }
             }
+
+            nextDrawableReady.Wait(TimeSpan.FromSeconds(1)); // Should never time out.
 
             if (pendingDrawables.TryDequeue(out var pending))
             {
