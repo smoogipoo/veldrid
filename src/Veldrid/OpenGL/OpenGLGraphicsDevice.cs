@@ -972,7 +972,7 @@ namespace Veldrid.OpenGL
             executionThread.WaitForIdle();
         }
 
-        private protected override void WaitForNextFrameReadyCore()
+        private protected override void WaitForNextFrameReadyCore(FramePacer pacer)
         {
         }
 

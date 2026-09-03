@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Threading;
 using Veldrid.MetalBindings;
 
@@ -13,6 +12,8 @@ namespace Veldrid.MTL
         public override bool IsDisposed => disposed;
 
         public CAMetalDrawable CurrentDrawable => currentDrawable.Drawable;
+
+        public double CurrentTargetTimestamp => currentDrawable.TargetTimestamp;
 
         public override bool SyncToVerticalBlank
         {
@@ -111,8 +112,6 @@ namespace Veldrid.MTL
             setSyncToVerticalBlank(syncToVerticalBlank);
         }
 
-        private readonly Stopwatch frameStopwatch = new Stopwatch();
-
         private void onDisplayLinkCallback(CAMetalDisplayLink link, CAMetalDisplayLinkUpdate update)
         {
             pendingDrawables.Enqueue(new DrawableUsage(update.drawable, update.targetTimestamp));
@@ -156,22 +155,18 @@ namespace Veldrid.MTL
 
                     currentDrawable = new DrawableUsage(drawable, 0);
                     framebuffer.UpdateTextures(CurrentDrawable, metalLayer.drawableSize);
-
-                    frameStopwatch.Restart();
                     return true;
                 }
             }
 
-            nextDrawableReady.Wait(TimeSpan.FromSeconds(1)); // Should never time out.
+            // Should never time out, but add a timeout just in case.
+            if (!nextDrawableReady.Wait(TimeSpan.FromSeconds(1)))
+                return false;
 
             if (pendingDrawables.TryDequeue(out var pending))
             {
-                pending.Sleep(frameStopwatch.Elapsed);
-
                 currentDrawable = pending;
                 framebuffer.UpdateTextures(CurrentDrawable, metalLayer.drawableSize);
-
-                frameStopwatch.Restart();
                 return true;
             }
 
@@ -180,8 +175,6 @@ namespace Veldrid.MTL
 
         public void InvalidateDrawable()
         {
-            frameStopwatch.Stop();
-
             currentDrawable.Dispose();
             currentDrawable = default;
         }
@@ -209,34 +202,14 @@ namespace Veldrid.MTL
         private readonly struct DrawableUsage : IDisposable
         {
             public readonly CAMetalDrawable Drawable;
-            private readonly double targetTimestamp;
+            public readonly double TargetTimestamp;
 
             public DrawableUsage(CAMetalDrawable drawable, double targetTimestamp)
             {
                 Drawable = drawable;
-                this.targetTimestamp = targetTimestamp;
+                TargetTimestamp = targetTimestamp;
 
                 ObjectiveCRuntime.retain(Drawable);
-            }
-
-            public void Sleep(TimeSpan lastFrameTime)
-            {
-                double currentTime = CoreAnimation.CurrentMediaTime();
-
-                // The amount of time that we are given to render the current frame. If we take too long, we'll fall into the next Vsync interval.
-                TimeSpan timeToRender = TimeSpan.FromSeconds(targetTimestamp - currentTime);
-
-                // To get as up-to-date input as possible, we'll delay drawing the current frame until as close to the Vsync interval as possible.
-                // A simple heuristic is to assume that frame times are generally static or ramping between frames.
-                // But we definitely do not want to miss the Vsync interval, so we apply a little lenience.
-                TimeSpan timeToWake = timeToRender - lastFrameTime - TimeSpan.FromMilliseconds(1);
-
-                if (timeToWake > TimeSpan.Zero)
-                {
-                    LibSystem.mach_timebase_info(out LibSystem.mach_timebase_info_data_t tb);
-                    ulong duration = (ulong)(timeToWake.TotalNanoseconds * tb.denom / tb.numer);
-                    LibSystem.mach_wait_until(LibSystem.mach_absolute_time() + duration);
-                }
             }
 
             public void Dispose()

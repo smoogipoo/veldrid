@@ -381,9 +381,9 @@ namespace Veldrid
         ///     as the next GPU buffer becomes available without incurring the extra frame of latency of
         ///     <see cref="Swapchain.SyncToVerticalBlank" />.
         /// </summary>
-        public void WaitForNextFrameReady()
+        public void WaitForNextFrameReady(FramePacer pacer)
         {
-            WaitForNextFrameReadyCore();
+            WaitForNextFrameReadyCore(pacer);
         }
 
         /// <summary>
@@ -959,7 +959,7 @@ namespace Veldrid
 
         private protected abstract void WaitForIdleCore();
 
-        private protected abstract void WaitForNextFrameReadyCore();
+        private protected abstract void WaitForNextFrameReadyCore(FramePacer pacer);
 
         private protected abstract void UpdateTextureCore(
             Texture texture,

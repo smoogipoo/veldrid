@@ -677,7 +677,7 @@ namespace Veldrid.D3D11
         {
         }
 
-        private protected override void WaitForNextFrameReadyCore()
+        private protected override void WaitForNextFrameReadyCore(FramePacer pacer)
         {
             mainSwapchain.WaitForNextFrameReady();
         }

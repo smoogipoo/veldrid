@@ -1278,7 +1278,7 @@ namespace Veldrid.Vk
             checkSubmittedFences();
         }
 
-        private protected override void WaitForNextFrameReadyCore()
+        private protected override void WaitForNextFrameReadyCore(FramePacer pacer)
         {
         }
 

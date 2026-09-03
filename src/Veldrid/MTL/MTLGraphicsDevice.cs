@@ -446,9 +446,10 @@ namespace Veldrid.MTL
             }
         }
 
-        private protected override void WaitForNextFrameReadyCore()
+        private protected override void WaitForNextFrameReadyCore(FramePacer pacer)
         {
-            mainSwapchain.EnsureDrawableAvailable();
+            if (mainSwapchain.EnsureDrawableAvailable())
+                pacer.Delay(TimeSpan.FromSeconds(mainSwapchain.CurrentTargetTimestamp - CoreAnimation.CurrentMediaTime()));
         }
 
         private protected override bool GetPixelFormatSupportCore(
