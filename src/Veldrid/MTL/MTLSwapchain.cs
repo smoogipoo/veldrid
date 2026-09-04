@@ -33,6 +33,7 @@ namespace Veldrid.MTL
         private readonly MtlGraphicsDevice gd;
 
         private MtlcaDisplayLink displayLink;
+        private CaDisplayLink caDisplayLink;
 
         private DrawableUsage currentDrawable;
         private CAMetalLayer metalLayer;
@@ -107,6 +108,8 @@ namespace Veldrid.MTL
             metalLayer.framebufferOnly = true;
             metalLayer.drawableSize = new CGSize(width, height);
 
+            caDisplayLink = new CaDisplayLink(onCaDisplayLinkCallback);
+
             framebuffer = new MtlSwapchainFramebuffer(gd, this, description.DepthFormat, format);
 
             setSyncToVerticalBlank(syncToVerticalBlank);
@@ -116,6 +119,13 @@ namespace Veldrid.MTL
         {
             pendingDrawables.Enqueue(new DrawableUsage(update.drawable, update.targetTimestamp));
             nextDrawableReady.Release();
+        }
+
+        private double nextWangs;
+
+        private void onCaDisplayLinkCallback(CADisplayLink link)
+        {
+            nextWangs = link.targetTimestamp;
         }
 
         #region Disposal
@@ -153,7 +163,7 @@ namespace Veldrid.MTL
                     if (drawable.IsNull)
                         return false;
 
-                    currentDrawable = new DrawableUsage(drawable, 0);
+                    currentDrawable = new DrawableUsage(drawable, nextWangs);
                     framebuffer.UpdateTextures(CurrentDrawable, metalLayer.drawableSize);
                     return true;
                 }
