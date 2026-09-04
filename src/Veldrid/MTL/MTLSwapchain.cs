@@ -196,6 +196,9 @@ namespace Veldrid.MTL
             {
                 displayLink.Dispose();
                 displayLink = null;
+
+                while (pendingDrawables.TryDequeue(out var pending))
+                    pending.Dispose();
             }
         }
 
