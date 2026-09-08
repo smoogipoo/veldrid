@@ -95,6 +95,7 @@ namespace Veldrid.MTL
             metalLayer.pixelFormat = MtlFormats.VdToMtlPixelFormat(format, false);
             metalLayer.framebufferOnly = true;
             metalLayer.drawableSize = new CGSize(width, height);
+            metalLayer.maximumDrawableCount = 2;
 
             setSyncToVerticalBlank(syncToVerticalBlank);
 
