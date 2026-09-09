@@ -95,7 +95,9 @@ namespace Veldrid.MTL
             metalLayer.pixelFormat = MtlFormats.VdToMtlPixelFormat(format, false);
             metalLayer.framebufferOnly = true;
             metalLayer.drawableSize = new CGSize(width, height);
-            metalLayer.maximumDrawableCount = 2;
+
+            // Prefer triple buffering on iOS for maximum performance, and double buffering on macOS for minimum latency.
+            metalLayer.maximumDrawableCount = gd.MetalFeatures.IsMacOS ? 2u : 3u;
 
             setSyncToVerticalBlank(syncToVerticalBlank);
 
